@@ -11,6 +11,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
+    "dids": "^4.0.4",
     "key-did-provider-ed25519": "^3.0.2",
     "next": "15.3.2",
     "postcss": "^8.5.3",
