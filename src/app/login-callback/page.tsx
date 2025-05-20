@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { JwtPayload, jwtDecode } from "jwt-decode";
-import { generateRandomness, jwtToAddress } from "@mysten/sui/zklogin";
+import { generateRandomness, jwtToAddress, getExtendedEphemeralPublicKey, getZkLoginSignature, } from "@mysten/sui/zklogin";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { fromB64 } from "@mysten/bcs";
+import axios from "axios";
+
+export type PartialZkLoginSignature = Omit<
+  Parameters<typeof getZkLoginSignature>["0"]["inputs"],
+  "addressSeed"
+>;
 
 export default function LoginCallbackPage() {
   const router = useRouter();
@@ -34,6 +42,7 @@ export default function LoginCallbackPage() {
           setStatus("Missing ephemeral key or randomness.");
           return;
         }
+        
 
         // ✅ Generate salt only if not already in localStorage
         let salt = window.localStorage.getItem("salt");
@@ -44,6 +53,30 @@ export default function LoginCallbackPage() {
 
         const zkLoginUserAddress = jwtToAddress(idToken, salt);
         console.log("ZkLogin User Address:", zkLoginUserAddress);
+
+        const ephemeralKeyPair = Ed25519Keypair.fromSecretKey(fromB64(keyExport));
+        const extendedEphemeralPublicKey = getExtendedEphemeralPublicKey(ephemeralKeyPair.getPublicKey());
+
+        const epoch = window.localStorage.getItem("epoch");
+
+        const zkProofResult = await (await axios.post(
+          "https://prover-dev.mystenlabs.com/v1",
+          {
+            jwt: idToken,
+            extendedEphemeralPublicKey: extendedEphemeralPublicKey,
+            maxEpoch: epoch,
+            jwtRandomness: randomness,
+            salt: salt,
+            keyClaimName: "sub",
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )).data;
+
+        const partialZkLoginSignature = zkProofResult as PartialZkLoginSignature
 
         // Redirect to dashboard or home
         router.push("/vote");

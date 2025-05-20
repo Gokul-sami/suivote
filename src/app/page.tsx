@@ -23,6 +23,7 @@ export default function HomePage() {
 
       window.sessionStorage.setItem("randomness", randomness);
       window.sessionStorage.setItem("ephemeralPrivateKey", privateKeyBase64);
+      window.localStorage.setItem("epoch", maxEpoch.toString());
 
       // 3. Create nonce using the ephemeral public key
       const nonce = generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness);
