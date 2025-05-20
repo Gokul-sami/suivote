@@ -18,17 +18,17 @@ export default function HomePage() {
 
       // 2. Generate ephemeral key and randomness
       const ephemeralKeyPair = new Ed25519Keypair();
-      const privateKeyBase64 = toB64(ephemeralKeyPair.getSecretKey());
+      const privateKeyBase64 = toB64(Uint8Array.from(ephemeralKeyPair.getSecretKey()));
       const randomness = generateRandomness();
 
-      localStorage.setItem("randomness", randomness);
-      localStorage.setItem("ephemeralPrivateKey", privateKeyBase64);
+      window.sessionStorage.setItem("randomness", randomness);
+      window.sessionStorage.setItem("ephemeralPrivateKey", privateKeyBase64);
 
       // 3. Create nonce using the ephemeral public key
       const nonce = generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness);
 
       // 4. Redirect to Google OAuth with nonce as the "state"
-      const clientId = "<YOUR_GOOGLE_CLIENT_ID>";
+      const clientId = "858676690672-ovpth6ambmpu19kl1rhj00l56dgp8kut.apps.googleusercontent.com";
       const redirectUri = "http://localhost:3000/login-callback"; // You need to create this route
       const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid%20email&nonce=${nonce}&state=${nonce}`;
 
