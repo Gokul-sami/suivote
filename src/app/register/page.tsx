@@ -1,46 +1,85 @@
-// app/register/page.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
+import {
+  signInWithPhoneNumber,
+  ConfirmationResult,
+  RecaptchaVerifier,
+} from "firebase/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [voterId, setVoterId] = useState("");
   const [phone, setPhone] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] =
+    useState<ConfirmationResult | null>(null);
   const [zkp, setZkp] = useState("");
+  const [error, setError] = useState("");
 
-  const DUMMY_OTP = "123456";
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: (response: unknown) => {
+            // reCAPTCHA solved - allow signInWithPhoneNumber.
+            console.log("reCAPTCHA solved:", response);
+          },
+        },
+      );
+    }
+  }, []);
 
   const generateZKP = () => {
-    const randomZkp = Math.random().toString(36).substring(2, 10).toUpperCase();
-    return randomZkp;
+    return "ZKP-" + Math.random().toString(36).substring(2, 10).toUpperCase();
   };
 
-  const handleSendOtp = () => {
-    if (voterId.trim().length < 5 || phone.trim().length < 10) {
-      setError("Enter a valid Voter ID and Phone Number");
+  const handleSendOtp = async () => {
+    if (voterId.trim().length < 5 || phone.trim().length !== 10) {
+      setError("Enter a valid Voter ID and 10-digit Phone Number");
       return;
     }
 
-    // Dummy: simulate sending OTP
-    setOtpSent(true);
-    setError("");
-    alert(`Dummy OTP sent to ${phone}: ${DUMMY_OTP}`);
+    try {
+      const formattedPhone = "+91" + phone.trim();
+      const appVerifier = window.recaptchaVerifier;
+
+      if (!appVerifier) {
+        setError("reCAPTCHA not ready. Please try again.");
+        return;
+      }
+
+      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmationResult(result);
+      setOtpSent(true);
+      setError("");
+      alert("OTP sent successfully!");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to send OTP. Please try again.");
+    }
   };
 
-  const handleVerifyOtp = () => {
-    if (otp !== DUMMY_OTP) {
+  const handleVerifyOtp = async () => {
+    try {
+      if (!confirmationResult) {
+        setError("OTP confirmation is not available. Please request OTP again.");
+        return;
+      }
+      await confirmationResult.confirm(otp);
+      const newZkp = generateZKP();
+      setZkp(newZkp);
+      localStorage.setItem("zkp", newZkp);
+      setError("");
+    } catch (err) {
+      console.error(err);
       setError("Invalid OTP. Please try again.");
-      return;
     }
-
-    const newZkp = generateZKP();
-    localStorage.setItem("zkp", newZkp);
-    setZkp(newZkp);
-    setError("");
   };
 
   const handleGoHome = () => {
@@ -103,9 +142,7 @@ export default function RegisterPage() {
           <>
             <p className="text-gray-700 mb-4">✅ Verified Successfully!</p>
             <p className="text-lg font-semibold mb-2">Your ZKP:</p>
-            <p className="bg-gray-200 text-blue-800 p-2 rounded-md mb-6 break-words">
-              {zkp}
-            </p>
+            <p className="bg-gray-200 text-blue-800 p-2 rounded-md mb-6 break-words">{zkp}</p>
 
             <button
               onClick={handleGoHome}
@@ -115,6 +152,9 @@ export default function RegisterPage() {
             </button>
           </>
         )}
+
+        {/* 🔒 Make sure this element exists in DOM */}
+        <div id="recaptcha-container"></div>
       </div>
     </main>
   );
