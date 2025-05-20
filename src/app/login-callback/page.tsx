@@ -76,7 +76,9 @@ export default function LoginCallbackPage() {
           }
         )).data;
 
-        const partialZkLoginSignature = zkProofResult as PartialZkLoginSignature
+        const partialZkLoginSignature = zkProofResult as PartialZkLoginSignature;
+        
+        console.log("Partial ZK Login Signature:", partialZkLoginSignature);
 
         // Redirect to dashboard or home
         router.push("/vote");
