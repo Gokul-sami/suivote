@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
@@ -7,6 +8,12 @@ import {
   ConfirmationResult,
   RecaptchaVerifier,
 } from "firebase/auth";
+
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier;
+  }
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,11 +34,14 @@ export default function RegisterPage() {
         {
           size: "invisible",
           callback: (response: unknown) => {
-            // reCAPTCHA solved - allow signInWithPhoneNumber.
             console.log("reCAPTCHA solved:", response);
           },
         },
       );
+
+      window.recaptchaVerifier.render().catch((err) => {
+        console.error("reCAPTCHA render error:", err);
+      });
     }
   }, []);
 
@@ -71,6 +81,7 @@ export default function RegisterPage() {
         setError("OTP confirmation is not available. Please request OTP again.");
         return;
       }
+
       await confirmationResult.confirm(otp);
       const newZkp = generateZKP();
       setZkp(newZkp);
@@ -153,7 +164,7 @@ export default function RegisterPage() {
           </>
         )}
 
-        {/* 🔒 Make sure this element exists in DOM */}
+        {/* reCAPTCHA must be rendered here */}
         <div id="recaptcha-container"></div>
       </div>
     </main>
