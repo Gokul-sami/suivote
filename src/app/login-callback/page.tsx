@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { JwtPayload, jwtDecode } from "jwt-decode";
 import { generateRandomness, jwtToAddress, getExtendedEphemeralPublicKey, getZkLoginSignature, } from "@mysten/sui/zklogin";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { fromB64, toB64 } from "@mysten/bcs";
+import { toB64 } from "@mysten/bcs";
 import axios from "axios";
 
 export type PartialZkLoginSignature = Omit<
@@ -16,6 +16,7 @@ export type PartialZkLoginSignature = Omit<
 export default function LoginCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState("Processing login...");
+  
 
   useEffect(() => {
     const processLogin = async () => {
@@ -39,12 +40,11 @@ export default function LoginCallbackPage() {
         //const jwtRandomness = toB64(randomness);
 
         const keyExport = window.sessionStorage.getItem("ephemeralPrivateKey");
-
         if (!randomness || !keyExport) {
           setStatus("Missing ephemeral key or randomness.");
           return;
         }
-        
+
 
         // ✅ Generate salt only if not already in localStorage
         let salt = window.localStorage.getItem("salt");
@@ -70,7 +70,7 @@ export default function LoginCallbackPage() {
         const randomnessBase64 = toB64(randomnessBytes);
         const saltBase64 = toB64(saltBytes);
 
-        const ephemeralKeyPair = Ed25519Keypair.fromSecretKey(fromB64(keyExport));
+        const ephemeralKeyPair = Ed25519Keypair.fromSecretKey(keyExport);
         console.log("Ephemeral Key Pair:", ephemeralKeyPair);
         const extendedEphemeralPublicKey = getExtendedEphemeralPublicKey(ephemeralKeyPair.getPublicKey());
 

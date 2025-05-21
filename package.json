@@ -20,8 +20,10 @@
     "key-did-provider-ed25519": "^3.0.2",
     "next": "15.3.2",
     "postcss": "^8.5.3",
+    "query-string": "^9.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.6.0",
     "suivote": "file:"
   },
   "devDependencies": {
