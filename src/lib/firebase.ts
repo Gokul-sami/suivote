@@ -1,12 +1,6 @@
 // lib/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier } from "firebase/auth";
-
-declare global {
-  interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-  }
-}
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDTezXg7TD8o5OMeHFqrYf5dBDXhoSCdIA",
@@ -20,15 +14,3 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-
-// Attach reCAPTCHA once globally
-if (typeof window !== "undefined" && !window.recaptchaVerifier) {
-  window.recaptchaVerifier = new RecaptchaVerifier(
-    auth,
-    "recaptcha-container",
-    {
-      size: "invisible",
-      callback: () => {},
-    },
-  );
-}
