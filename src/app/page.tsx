@@ -60,7 +60,7 @@ export default function HomePage() {
         <p className="mb-6 text-gray-700">Welcome! Please choose an option:</p>
 
         <div className="space-y-4">
-          <button
+          {/* <button
             onClick={() => router.push("/register")}
             className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
           >
@@ -72,7 +72,7 @@ export default function HomePage() {
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
             Vote (Verify ZKP)
-          </button>
+          </button> */}
 
           <button
             onClick={() => router.push("/admin")}
