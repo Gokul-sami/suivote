@@ -1,16 +1,38 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function CreateVotingSection() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [numCandidates, setNumCandidates] = useState(2);
   const router = useRouter();
 
   const handleCreate = () => {
-    // Here you would ideally send this data to the backend (for now, just log it)
-    console.log({ title, description });
+    // Get existing campaigns
+    const existing = typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('campaigns') || '[]')
+      : [];
+    // Assign next numeric id
+    const nextId = existing.length > 0
+      ? (Math.max(...existing.map((c: any) => Number(c.id) || 0)) + 1).toString()
+      : '1';
+
+    // Collect all details
+    const votingDetails = {
+      id: nextId,
+      title,
+      description,
+      startDate,
+      endDate,
+      numCandidates,
+    };
+
+    // Save to localStorage
+    localStorage.setItem('campaigns', JSON.stringify([...existing, votingDetails]));
 
     // Redirect to the admin dashboard after creation
     router.push('/admin/dashboard');
@@ -34,7 +56,29 @@ export default function CreateVotingSection() {
             placeholder="Enter Voting Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg w-full h-40 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="border border-gray-300 p-3 rounded-lg w-full h-24 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="date"
+            placeholder="Start Date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="date"
+            placeholder="End Date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="number"
+            min={2}
+            placeholder="Number of Candidates"
+            value={numCandidates}
+            onChange={(e) => setNumCandidates(Number(e.target.value))}
+            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
