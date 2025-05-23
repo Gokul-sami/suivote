@@ -12,12 +12,12 @@ export default function VerifyPage() {
     const storedZkp = localStorage.getItem("did");
 
     if (!storedZkp) {
-      setError("No ZKP found. Please register first.");
+      setError("No did found. Please register first.");
       return;
     }
 
     if (inputZkp.trim().toUpperCase() !== storedZkp.toUpperCase()) {
-      setError("Invalid ZKP. Please try again.");
+      setError("Invalid DID. Please try again.");
       return;
     }
 
@@ -28,7 +28,7 @@ export default function VerifyPage() {
   return (
     <main className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
-        <h1 className="text-2xl font-bold text-blue-600 mb-4">Verify Your ZKP</h1>
+        <h1 className="text-2xl font-bold text-blue-600 mb-4">Verify Your did</h1>
 
         <input
           type="text"
