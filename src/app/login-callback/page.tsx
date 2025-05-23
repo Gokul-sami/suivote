@@ -56,6 +56,7 @@ export default function LoginCallbackPage() {
         const zkLoginUserAddress = jwtToAddress(idToken, newsalt);
         console.log("ZkLogin User Address:", zkLoginUserAddress);
         
+        window.sessionStorage.setItem("zkLoginUserAddress", zkLoginUserAddress);
         const randomnessBigInt = BigInt(randomness);
         const saltBigInt = BigInt(newsalt);    
 
