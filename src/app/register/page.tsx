@@ -1,19 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import {
   signInWithPhoneNumber,
-  ConfirmationResult,
   RecaptchaVerifier,
+  ConfirmationResult,
 } from "firebase/auth";
-
-declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
-  }
-}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,64 +15,98 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] =
-    useState<ConfirmationResult | null>(null);
   const [zkp, setZkp] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const confirmationResultRef = useRef<ConfirmationResult | null>(null);
 
+  // Initialize and cleanup reCAPTCHA
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: (response: unknown) => {
-            console.log("reCAPTCHA solved:", response);
-          },
+    // Initialize reCAPTCHA
+    recaptchaVerifierRef.current = new RecaptchaVerifier(
+      auth,
+      "recaptcha-container",
+      {
+        size: "invisible",
+        callback: () => {
+          console.log("reCAPTCHA resolved");
         },
-      );
+        "expired-callback": () => {
+          setError("reCAPTCHA expired. Please try again.");
+          setOtpSent(false);
+        },
+      },
+    );
 
-      window.recaptchaVerifier.render().catch((err) => {
-        console.error("reCAPTCHA render error:", err);
-      });
-    }
+    return () => {
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      }
+    };
   }, []);
 
+  // Simple ZKP generation (placeholder; use cryptographic library in production)
   const generateZKP = () => {
     return "ZKP-" + Math.random().toString(36).substring(2, 10).toUpperCase();
   };
 
   const handleSendOtp = async () => {
-    if (voterId.trim().length < 5 || phone.trim().length !== 10) {
-      setError("Enter a valid Voter ID and 10-digit Phone Number");
+    setError("");
+    setLoading(true);
+
+    // Validate inputs
+    if (voterId.trim().length < 5) {
+      setError("Voter ID must be at least 5 characters.");
+      setLoading(false);
+      return;
+    }
+    if (!/^\d{10}$/.test(phone.trim())) {
+      setError("Phone number must be exactly 10 digits.");
+      setLoading(false);
       return;
     }
 
     try {
       const formattedPhone = "+91" + phone.trim();
-      const appVerifier = window.recaptchaVerifier;
-
+      const appVerifier = recaptchaVerifierRef.current;
       if (!appVerifier) {
-        setError("reCAPTCHA not ready. Please try again.");
+        setError("reCAPTCHA not initialized. Please refresh and try again.");
+        setLoading(false);
         return;
       }
 
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmationResult(result);
+      confirmationResultRef.current = result; // Store in ref instead of window
       setOtpSent(true);
-      setError("");
       alert("OTP sent successfully!");
-    } catch (err) {
-      console.error(err);
-      setError("Failed to send OTP. Please try again.");
+    } catch (err: unknown) {
+      console.error("Error sending OTP:", err);
+      const errorMessages: { [key: string]: string } = {
+        "auth/invalid-phone-number": "Invalid phone number format.",
+        "auth/too-many-requests": "Too many requests. Please try again later.",
+        "auth/quota-exceeded": "SMS quota exceeded. Try again later.",
+      };
+      let code = "";
+      if (typeof err === "object" && err !== null && "code" in err) {
+        code = (err as { code?: string }).code ?? "";
+      }
+      setError(errorMessages[code] || "Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
+    setError("");
+    setLoading(true);
+
     try {
+      const confirmationResult = confirmationResultRef.current;
       if (!confirmationResult) {
-        setError("OTP confirmation is not available. Please request OTP again.");
+        setError("No OTP request found. Please request OTP again.");
+        setLoading(false);
         return;
       }
 
@@ -86,10 +114,18 @@ export default function RegisterPage() {
       const newZkp = generateZKP();
       setZkp(newZkp);
       localStorage.setItem("zkp", newZkp);
-      setError("");
-    } catch (err) {
-      console.error(err);
-      setError("Invalid OTP. Please try again.");
+    } catch (err: unknown) {
+      console.error("Error verifying OTP:", err);
+      let errorMessage = "Failed to verify OTP. Please try again.";
+      if (typeof err === "object" && err !== null && "code" in err) {
+        const code = (err as { code?: string }).code;
+        if (code === "auth/invalid-verification-code") {
+          errorMessage = "Invalid OTP. Please try again.";
+        }
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,8 +135,11 @@ export default function RegisterPage() {
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
+      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center relative">
         <h1 className="text-2xl font-bold text-blue-600 mb-4">Register & Get Your ZKP</h1>
+
+        {/* reCAPTCHA container (placed early to ensure availability) */}
+        <div id="recaptcha-container" />
 
         {!zkp ? (
           <>
@@ -109,24 +148,28 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={voterId}
-                  onChange={(e) => setVoterId(e.target.value)}
+                  onChange={(e) => setVoterId(e.target.value.trim())}
                   placeholder="Enter your Voter ID"
                   className="w-full p-2 border rounded-md mb-4"
+                  disabled={loading}
                 />
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your Phone Number"
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} // Allow only digits
+                  placeholder="Enter 10-digit Phone Number"
+                  maxLength={10}
                   className="w-full p-2 border rounded-md mb-4"
+                  disabled={loading}
                 />
                 {error && <p className="text-red-500 mb-4">{error}</p>}
 
                 <button
                   onClick={handleSendOtp}
-                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition disabled:bg-green-400"
+                  disabled={loading}
                 >
-                  Send OTP
+                  {loading ? "Sending OTP..." : "Send OTP"}
                 </button>
               </>
             ) : (
@@ -134,17 +177,31 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter OTP"
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} // Allow only digits
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
                   className="w-full p-2 border rounded-md mb-4"
+                  disabled={loading}
                 />
                 {error && <p className="text-red-500 mb-4">{error}</p>}
 
                 <button
                   onClick={handleVerifyOtp}
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:bg-blue-400"
+                  disabled={loading}
                 >
-                  Verify OTP
+                  {loading ? "Verifying OTP..." : "Verify OTP"}
+                </button>
+                <button
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtp("");
+                    setError("");
+                  }}
+                  className="w-full mt-2 text-blue-600 hover:underline"
+                  disabled={loading}
+                >
+                  Back to Phone Input
                 </button>
               </>
             )}
@@ -163,9 +220,6 @@ export default function RegisterPage() {
             </button>
           </>
         )}
-
-        {/* reCAPTCHA must be rendered here */}
-        <div id="recaptcha-container"></div>
       </div>
     </main>
   );
