@@ -34,7 +34,7 @@ export default function VerifyPage() {
           type="text"
           value={inputZkp}
           onChange={(e) => setInputZkp(e.target.value)}
-          placeholder="Enter your ZKP"
+          placeholder="Enter your did"
           className="w-full p-2 border rounded-md mb-4"
         />
 
