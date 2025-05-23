@@ -31,7 +31,10 @@ export default function RegisterPage() {
   const [zkp, setZkp] = useState("");
 
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [info, setInfo] = useState("");
 
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const confirmationResultRef = useRef<ConfirmationResult | null>(null);
@@ -48,7 +51,7 @@ export default function RegisterPage() {
             setError("reCAPTCHA expired. Please refresh.");
             setStep(1);
           },
-        },
+        }
       );
     }
 
@@ -62,17 +65,27 @@ export default function RegisterPage() {
 
   const validateStep1 = () => {
     if (!/^[A-Z]{3}[0-9]{7}$/.test(voterId)) {
-      setError("Voter ID must be 3 uppercase letters followed by 7 digits.");
+      setError(
+        "Voter ID must be 3 uppercase letters followed by 7 digits (total 10 characters)."
+      );
       return false;
     }
-    if (!address.trim()) {
-      setError("Address is required.");
+
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
+      setError("Date of Birth must be in format dd/mm/yyyy.");
       return false;
     }
+
+    if (address.trim().length < 20) {
+      setError("Address must be at least 20 characters long.");
+      return false;
+    }
+
     if (!photo || !idProof) {
       setError("Please upload both Photo and Identity Proof.");
       return false;
     }
+
     return true;
   };
 
@@ -89,11 +102,13 @@ export default function RegisterPage() {
 
   const handleSendOtp = async () => {
     setError("");
-    setLoading(true);
+    setInfo("");
+    setOtpSent(false);
+    setSendingOtp(true);
 
     if (!/^\d{10}$/.test(phone.trim())) {
       setError("Phone number must be exactly 10 digits.");
-      setLoading(false);
+      setSendingOtp(false);
       return;
     }
 
@@ -105,26 +120,29 @@ export default function RegisterPage() {
 
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       confirmationResultRef.current = result;
+      setOtpSent(true);
+      setInfo("OTP sent successfully. Please check your phone.");
     } catch (err: unknown) {
       const messages: { [key: string]: string } = {
         "auth/invalid-phone-number": "Invalid phone number.",
         "auth/too-many-requests": "Too many attempts. Try later.",
         "auth/quota-exceeded": "SMS quota exceeded. Try later.",
       };
-      if (typeof err === "object" && err !== null && "code" in err && typeof (err as { code?: string }).code === "string") {
-        const code = (err as { code: string }).code;
-        setError(messages[code] || "Failed to send OTP.");
+      if (typeof err === "object" && err !== null && "code" in err) {
+        setError(messages[(err as { code: string }).code] || "Failed to send OTP.");
       } else {
         setError("Failed to send OTP.");
       }
     } finally {
-      setLoading(false);
+      setSendingOtp(false);
     }
   };
 
   const handleVerifyOtp = async () => {
-    setLoading(true);
+    setVerifyingOtp(true);
     setError("");
+    setInfo("");
+
     try {
       const confirmationResult = confirmationResultRef.current;
       if (!confirmationResult) throw new Error("No OTP request found");
@@ -133,100 +151,171 @@ export default function RegisterPage() {
       const z = generateZKP();
       setZkp(z);
       localStorage.setItem("zkp", z);
+      setInfo("Phone number verified successfully!");
     } catch {
       setError("Invalid OTP or verification failed.");
     } finally {
-      setLoading(false);
+      setVerifyingOtp(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-center mb-4 text-blue-600">Register & Get ZKP</h1>
+        <h1 className="text-2xl font-bold text-center mb-4 text-blue-600">
+          Register & Get ZKP
+        </h1>
         <div id="recaptcha-container" />
 
         {step === 1 ? (
           <>
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name"
-              className="w-full p-2 mb-3 border rounded-md" />
-            <input type="text" value={voterId} onChange={(e) => setVoterId(e.target.value.toUpperCase())}
-              placeholder="Voter ID (e.g., ABC1234567)" className="w-full p-2 mb-3 border rounded-md" />
-            <input type="text" value={fatherName} onChange={(e) => setFatherName(e.target.value)}
-              placeholder="Father's Name" className="w-full p-2 mb-3 border rounded-md" />
-            <input type="text" value={motherName} onChange={(e) => setMotherName(e.target.value)}
-              placeholder="Mother's Name" className="w-full p-2 mb-3 border rounded-md" />
-            <input type="number" value={dob} onChange={(e) => setDob(e.target.value)}
-              placeholder="Date of Birth (YYYY)" className="w-full p-2 mb-3 border rounded-md" />
-            <select value={gender} onChange={(e) => setGender(e.target.value)}
-              className="w-full p-2 mb-3 border rounded-md">
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full Name"
+              className="w-full p-2 mb-3 border rounded-md"
+            />
+            <input
+              type="text"
+              value={voterId}
+              onChange={(e) => setVoterId(e.target.value.toUpperCase())}
+              placeholder="Voter ID (e.g., ABC1234567)"
+              className="w-full p-2 mb-3 border rounded-md"
+            />
+            <input
+              type="text"
+              value={fatherName}
+              onChange={(e) => setFatherName(e.target.value)}
+              placeholder="Father's Name"
+              className="w-full p-2 mb-3 border rounded-md"
+            />
+            <input
+              type="text"
+              value={motherName}
+              onChange={(e) => setMotherName(e.target.value)}
+              placeholder="Mother's Name"
+              className="w-full p-2 mb-3 border rounded-md"
+            />
+            <input
+              type="text"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              placeholder="Date of Birth (dd/mm/yyyy)"
+              className="w-full p-2 mb-3 border rounded-md"
+            />
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="w-full p-2 mb-3 border rounded-md"
+            >
               <option value="">Select Gender</option>
               <option>Male</option>
               <option>Female</option>
               <option>Other</option>
             </select>
-            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
-              placeholder="Residential Address (as per ID)" className="w-full p-2 mb-3 border rounded-md" />
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Residential Address (as per ID)"
+              className="w-full p-2 mb-3 border rounded-md"
+            />
 
             <label className="block mb-3">
               <span className="text-sm text-gray-600">Photograph</span>
-              <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-                className="w-full p-2 mt-1 border rounded-md cursor-pointer hover:border-blue-500" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                className="w-full p-2 mt-1 border rounded-md cursor-pointer hover:border-blue-500"
+              />
             </label>
             <label className="block mb-3">
-              <span className="text-sm text-gray-600">Identity Proof (Aadhaar/Voter ID)</span>
-              <input type="file" accept="image/*" onChange={(e) => setIdProof(e.target.files?.[0] || null)}
-                className="w-full p-2 mt-1 border rounded-md cursor-pointer hover:border-blue-500" />
+              <span className="text-sm text-gray-600">
+                Identity Proof (Aadhaar/Voter ID)
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setIdProof(e.target.files?.[0] || null)}
+                className="w-full p-2 mt-1 border rounded-md cursor-pointer hover:border-blue-500"
+              />
             </label>
 
             {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-            <button onClick={handleNext}
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
+            <button
+              onClick={handleNext}
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+            >
               Next: Phone Verification
             </button>
           </>
         ) : !zkp ? (
           <>
-            <input type="tel" value={phone}
+            <input
+              type="tel"
+              value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
               placeholder="Enter 10-digit Phone Number"
               maxLength={10}
-              className="w-full p-2 mb-3 border rounded-md" />
+              className="w-full p-2 mb-3 border rounded-md"
+            />
 
-            <button onClick={handleSendOtp}
+            <button
+              onClick={handleSendOtp}
               className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition mb-3"
-              disabled={loading}>
-              {loading ? "Sending OTP..." : "Send OTP"}
+              disabled={sendingOtp}
+            >
+              {sendingOtp ? "Sending OTP..." : "Send OTP"}
             </button>
 
-            <input type="text" value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              placeholder="Enter OTP"
-              maxLength={6}
-              className="w-full p-2 mb-3 border rounded-md" />
+            {otpSent && (
+              <>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Enter OTP"
+                  maxLength={6}
+                  className="w-full p-2 mb-3 border rounded-md"
+                />
 
-            {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+                <button
+                  onClick={handleVerifyOtp}
+                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+                  disabled={verifyingOtp}
+                >
+                  {verifyingOtp ? "Verifying..." : "Verify OTP"}
+                </button>
+              </>
+            )}
 
-            <button onClick={handleVerifyOtp}
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-              disabled={loading}>
-              {loading ? "Verifying..." : "Verify OTP"}
-            </button>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {info && <p className="text-green-600 text-sm mt-2">{info}</p>}
 
-            <button onClick={() => setStep(1)}
-              className="w-full mt-2 text-blue-600 hover:underline text-sm">
+            <button
+              onClick={() => setStep(1)}
+              className="w-full mt-2 text-blue-600 hover:underline text-sm"
+            >
               ← Back to Info Form
             </button>
           </>
         ) : (
           <>
-            <p className="text-green-600 text-lg text-center mb-4">✅ Phone Verified Successfully!</p>
+            <p className="text-green-600 text-lg text-center mb-4">
+              ✅ Phone Verified Successfully!
+            </p>
             <p className="font-semibold text-center mb-2">Your ZKP:</p>
-            <p className="bg-gray-100 text-blue-800 p-3 rounded-md text-center font-mono">{zkp}</p>
+            <p className="bg-gray-100 text-blue-800 p-3 rounded-md text-center font-mono">
+              {zkp}
+            </p>
 
-            <button onClick={() => router.push("/")}
-              className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
+            <button
+              onClick={() => router.push("/")}
+              className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+            >
               Go to Home
             </button>
           </>
