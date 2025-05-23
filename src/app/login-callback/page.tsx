@@ -109,7 +109,7 @@ export default function LoginCallbackPage() {
         console.log("Partial ZK Login Signature:", partialZkLoginSignature);
 
         // Redirect to dashboard or home
-        router.push("/vote");
+        router.push("/dashboard");
       } catch (err) {
         console.error("Login processing error:", err);
         setStatus("Login failed.");
