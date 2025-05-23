@@ -89,6 +89,10 @@ export default function HomePage() {
               Login with Google (ZK)
             </button>
           </div>
+          <p></p>
+              {/* <button onClick={handleReset} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                Reset Login State
+              </button> */}
         </div>
       </div>
     </main>
