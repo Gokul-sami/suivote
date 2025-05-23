@@ -9,7 +9,7 @@ export default function VerifyPage() {
   const [error, setError] = useState("");
 
   const handleVerify = () => {
-    const storedZkp = localStorage.getItem("zkp");
+    const storedZkp = localStorage.getItem("did");
 
     if (!storedZkp) {
       setError("No ZKP found. Please register first.");

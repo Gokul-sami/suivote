@@ -19,6 +19,7 @@
     "firebase": "^11.8.0",
     "jwt-decode": "^4.0.0",
     "key-did-provider-ed25519": "^3.0.2",
+    "multiformats": "^13.3.6",
     "next": "15.3.2",
     "postcss": "^8.5.3",
     "query-string": "^9.2.0",

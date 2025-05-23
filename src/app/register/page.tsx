@@ -155,7 +155,7 @@ export default function RegisterPage() {
       localStorage.setItem("did", did);
       
       // Redirect to home after successful verification
-      router.push("/");
+      router.push("/dashboard");
       
     } catch {
       setError("Invalid OTP or verification failed.");
