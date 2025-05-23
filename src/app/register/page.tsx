@@ -153,6 +153,8 @@ export default function RegisterPage() {
       // Create and store DID (not shown to user)
       const did = createDID(phone);
       localStorage.setItem("did", did);
+
+      alert(`Your DID: ${did}`);
       
       // Redirect to home after successful verification
       router.push("/dashboard");
