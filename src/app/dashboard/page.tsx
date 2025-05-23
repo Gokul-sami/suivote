@@ -15,14 +15,14 @@ export default function Dashboard() {
             onClick={() => router.push("/register")}
             className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
           >
-            Register / Get ZKP
+            Register
           </button>
 
           <button
             onClick={() => router.push("/verify")}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
-            Vote (Verify ZKP)
+            Vote
           </button>
         </div>
       </div>
