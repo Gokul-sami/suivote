@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { JwtPayload, jwtDecode } from "jwt-decode";
 import { generateRandomness, jwtToAddress, getExtendedEphemeralPublicKey, getZkLoginSignature, } from "@mysten/sui/zklogin";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { fromB64 } from "@mysten/bcs";
+import { toB64 } from "@mysten/bcs";
 import axios from "axios";
 
 export type PartialZkLoginSignature = Omit<
@@ -16,6 +16,7 @@ export type PartialZkLoginSignature = Omit<
 export default function LoginCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState("Processing login...");
+  
 
   useEffect(() => {
     const processLogin = async () => {
@@ -36,13 +37,14 @@ export default function LoginCallbackPage() {
 
         // Get ephemeral key and randomness
         const randomness = window.sessionStorage.getItem("randomness");
-        const keyExport = window.sessionStorage.getItem("ephemeralPrivateKey");
+        //const jwtRandomness = toB64(randomness);
 
+        const keyExport = window.sessionStorage.getItem("ephemeralPrivateKey");
         if (!randomness || !keyExport) {
           setStatus("Missing ephemeral key or randomness.");
           return;
         }
-        
+
 
         // ✅ Generate salt only if not already in localStorage
         let salt = window.localStorage.getItem("salt");
@@ -50,23 +52,48 @@ export default function LoginCallbackPage() {
           salt = generateRandomness();
           window.localStorage.setItem("salt", salt);
         }
-
-        const zkLoginUserAddress = jwtToAddress(idToken, salt);
+        const newsalt=salt;
+        const zkLoginUserAddress = jwtToAddress(idToken, newsalt);
         console.log("ZkLogin User Address:", zkLoginUserAddress);
+        
+        const randomnessBigInt = BigInt(randomness);
+        const saltBigInt = BigInt(newsalt);    
 
-        const ephemeralKeyPair = Ed25519Keypair.fromSecretKey(fromB64(keyExport));
+        const randomnessBytes = new Uint8Array(16);
+        const saltBytes = new Uint8Array(16);
+        for (let i = 15; i >= 0; i--) {
+          randomnessBytes[i] = Number(randomnessBigInt >> BigInt((15 - i) * 8) & BigInt(0xff));
+          saltBytes[i] = Number(saltBigInt >> BigInt((15 - i) * 8) & BigInt(0xff));
+        }
+
+        // Encode to Base64
+        const randomnessBase64 = toB64(randomnessBytes);
+        const saltBase64 = toB64(saltBytes);
+
+        const ephemeralKeyPair = Ed25519Keypair.fromSecretKey(keyExport);
+        console.log("Ephemeral Key Pair:", ephemeralKeyPair);
         const extendedEphemeralPublicKey = getExtendedEphemeralPublicKey(ephemeralKeyPair.getPublicKey());
 
         const epoch = window.localStorage.getItem("epoch");
+        console.log("Epoch from localStorage:", epoch);
+        console.log("ZK Prover payload:", {
+                  jwt: idToken,
+                  extendedEphemeralPublicKey,
+                  maxEpoch: epoch,
+                  jwtRandomness: randomnessBase64,
+                  saltBase64,
+                  keyClaimName: "sub",
+                });
 
-        const zkProofResult = await (await axios.post(
+
+        const zkProofResult = await axios.post(
           "https://prover-dev.mystenlabs.com/v1",
           {
             jwt: idToken,
             extendedEphemeralPublicKey: extendedEphemeralPublicKey,
             maxEpoch: epoch,
-            jwtRandomness: randomness,
-            salt: salt,
+            jwtRandomness: randomnessBase64,
+            salt: saltBase64,
             keyClaimName: "sub",
           },
           {
@@ -74,9 +101,10 @@ export default function LoginCallbackPage() {
               "Content-Type": "application/json",
             },
           }
-        )).data;
+        );
 
-        const partialZkLoginSignature = zkProofResult as PartialZkLoginSignature;
+
+        const partialZkLoginSignature = zkProofResult.data as PartialZkLoginSignature;
         
         console.log("Partial ZK Login Signature:", partialZkLoginSignature);
 
@@ -100,3 +128,4 @@ export default function LoginCallbackPage() {
     </main>
   );
 }
+
