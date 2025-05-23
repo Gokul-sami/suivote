@@ -9,16 +9,16 @@ import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
 export default function HomePage() {
   const router = useRouter();
 
-    const handleReset = () => {
-    // Your provided reset function
-    const resetLocalState = () => {
-      sessionStorage.clear();
-      localStorage.clear();
-      router.push("/"); // ensure router is defined or use useRouter from next/router
-    };
+  //   const handleReset = () => {
+  //   // Your provided reset function
+  //   const resetLocalState = () => {
+  //     sessionStorage.clear();
+  //     localStorage.clear();
+  //     router.push("/"); // ensure router is defined or use useRouter from next/router
+  //   };
 
-    resetLocalState();
-  };
+  //   resetLocalState();
+  // };
 
   async function handleGoogleLogin() {
     try {
