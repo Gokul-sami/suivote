@@ -3,7 +3,7 @@ module suivote_move::election_commission {
     // use sui::object::{Self, UID};
     // use sui::transfer;
     // use sui::tx_context::TxContext;
-    use sui::storage::{borrow_global, borrow_global_mut, exists};
+    // use sui::std;
 
     use suivote_move::vote::Voter;
     use suivote_move::vote::{is_verified, has_voted, mark_as_voted, set_verified};
@@ -16,9 +16,9 @@ module suivote_move::election_commission {
     }
 
     //Initialize the config 
-    public fun init_config(ec_address: address, ctx: &mut TxContext) {
+    public fun init_config(ec_address: address, ctx: &mut TxContext, config: &mut Config) {
         let sender = ctx.sender();
-        assert!(!exists<Config>(sender), 100);
+        assert!(!(config.admin==sender), 100);
 
         let config = Config {
             id: object::new(ctx),
@@ -30,24 +30,24 @@ module suivote_move::election_commission {
     }
 
     // Update the EC address — only admin allowed
-    public fun update_ec_address(new_address: address, ctx: &TxContext) {
+    public fun update_ec_address(new_address: address, ctx: &TxContext, config: &mut Config) {
         let sender = ctx.sender();
-        let config = borrow_global_mut<Config>(sender);
+        // let config = borrow_global_mut<Config>(sender);
         assert!(sender == config.admin, 101);
 
         config.ec_address = new_address;
     }
 
     // EC-only: Verify voter
-    public fun verify_voter(voter: &mut Voter, ctx: &TxContext) {
-        let config = borrow_global<Config>(ctx.sender());
+    public fun verify_voter(voter: &mut Voter, ctx: &TxContext, config: &mut Config) {
+        // let config = borrow_global<Config>(ctx.sender());
         assert!(ctx.sender() == config.ec_address, 200);
         set_verified(voter, true);
     }
 
     /// EC-only: Mark voter as voted
-    public fun mark_voted(voter: &mut Voter, ctx: &TxContext) {
-        let config = borrow_global<Config>(ctx.sender());
+    public fun mark_voted(voter: &mut Voter, ctx: &TxContext, config: &mut Config) {
+        // let config = borrow_global<Config>(ctx.sender());
         assert!(ctx.sender() == config.ec_address, 201);
         assert!(is_verified(voter), 202);
         assert!(!has_voted(voter), 203);
