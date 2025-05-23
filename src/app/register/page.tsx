@@ -28,7 +28,6 @@ export default function RegisterPage() {
   // Step 2 state
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [zkp, setZkp] = useState("");
 
   const [error, setError] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -96,8 +95,10 @@ export default function RegisterPage() {
     }
   };
 
-  const generateZKP = () => {
-    return "ZKP-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+  const createDID = (phone: string) => {
+    // Example: create a simple DID using phone number and random string
+    // In a real app, you might want to use a proper DID method
+    return `did:example:${phone}-${Math.random().toString(36).substring(2, 10)}`;
   };
 
   const handleSendOtp = async () => {
@@ -148,10 +149,14 @@ export default function RegisterPage() {
       if (!confirmationResult) throw new Error("No OTP request found");
 
       await confirmationResult.confirm(otp);
-      const z = generateZKP();
-      setZkp(z);
-      localStorage.setItem("zkp", z);
-      setInfo("Phone number verified successfully!");
+
+      // Create and store DID (not shown to user)
+      const did = createDID(phone);
+      localStorage.setItem("did", did);
+      
+      // Redirect to home after successful verification
+      router.push("/");
+      
     } catch {
       setError("Invalid OTP or verification failed.");
     } finally {
@@ -163,7 +168,7 @@ export default function RegisterPage() {
     <main className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-lg">
         <h1 className="text-2xl font-bold text-center mb-4 text-blue-600">
-          Register & Get ZKP
+          Register
         </h1>
         <div id="recaptcha-container" />
 
@@ -252,7 +257,7 @@ export default function RegisterPage() {
               Next: Phone Verification
             </button>
           </>
-        ) : !zkp ? (
+        ) : (
           <>
             <input
               type="tel"
@@ -300,23 +305,6 @@ export default function RegisterPage() {
               className="w-full mt-2 text-blue-600 hover:underline text-sm"
             >
               ← Back to Info Form
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="text-green-600 text-lg text-center mb-4">
-              ✅ Phone Verified Successfully!
-            </p>
-            <p className="font-semibold text-center mb-2">Your ZKP:</p>
-            <p className="bg-gray-100 text-blue-800 p-3 rounded-md text-center font-mono">
-              {zkp}
-            </p>
-
-            <button
-              onClick={() => router.push("/")}
-              className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-            >
-              Go to Home
             </button>
           </>
         )}
