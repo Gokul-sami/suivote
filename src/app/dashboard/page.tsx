@@ -34,7 +34,7 @@ export default function Dashboard() {
       <div className="absolute top-4 right-6" ref={profileRef}>
         <button
           onClick={() => setShowProfile(!showProfile)}
-          className="bg-white border border-gray-300 px-4 py-2 rounded-md shadow hover:shadow-md transition"
+          className="bg-dark border border-black-300 px-4 py-2 rounded-md shadow hover:shadow-md transition"
         >
           Profile
         </button>
