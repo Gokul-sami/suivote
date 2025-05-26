@@ -1,5 +1,7 @@
 'use client';
 
+import { db } from '@/lib/firebase';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -9,71 +11,55 @@ export default function CampaignDetails() {
   const { id } = params as { id: string };
   const [campaign, setCampaign] = useState<any>(null);
   const [candidates, setCandidates] = useState<any[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [candidateName, setCandidateName] = useState('');
-  const [candidateDesc, setCandidateDesc] = useState('');
-  const [candidateVoterId, setCandidateVoterId] = useState('');
-  const [candidateFullName, setCandidateFullName] = useState('');
-  const [candidateAge, setCandidateAge] = useState('');
-  const [candidateGender, setCandidateGender] = useState('');
-  const [candidateRegion, setCandidateRegion] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = JSON.parse(localStorage.getItem('campaigns') || '[]');
-      const found = stored.find((c: any) => c.id === id);
-      setCampaign(found);
-
-      // Load candidates for this campaign
-      const allCandidates = JSON.parse(localStorage.getItem('candidates') || '{}');
-      setCandidates(allCandidates[id] || []);
+    async function fetchCampaign() {
+      setLoading(true);
+      const docRef = doc(db, 'campaigns', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setCampaign({
+          ...data,
+          start: data.start_date?.toDate?.() || new Date(data.start_date),
+          end: data.end_date?.toDate?.() || new Date(data.end_date),
+        });
+      } else {
+        setCampaign(null);
+      }
+      setLoading(false);
     }
+
+    async function fetchCandidates() {
+      const candidatesCol = collection(db, 'campaigns', id, 'candidates');
+      const candidatesSnap = await getDocs(candidatesCol);
+      const candidatesList = candidatesSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCandidates(candidatesList);
+    }
+
+    fetchCampaign();
+    fetchCandidates();
   }, [id]);
 
   // Helper to format date as dd-mm-yyyy
-  function formatDate(dateStr: string) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
+  function formatDate(date: Date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   }
 
-  // Add candidate handler
-  function handleAddCandidate() {
-    if (
-      !candidateVoterId.trim() ||
-      !candidateFullName.trim() ||
-      !candidateAge.trim() ||
-      !candidateGender.trim() ||
-      !candidateRegion.trim()
-    ) return;
-    const newCandidate = {
-      id: Date.now().toString(),
-      name: candidateFullName, // Displayed as candidate name
-      voterId: candidateVoterId,
-      fullName: candidateFullName,
-      age: candidateAge,
-      gender: candidateGender,
-      region: candidateRegion,
-    };
-    const allCandidates = JSON.parse(localStorage.getItem('candidates') || '{}');
-    const updated = {
-      ...allCandidates,
-      [id]: [...(allCandidates[id] || []), newCandidate],
-    };
-    localStorage.setItem('candidates', JSON.stringify(updated));
-    setCandidates(updated[id]); // This will update the candidates list and display the new candidate
-    setCandidateName('');
-    setCandidateDesc('');
-    setCandidateVoterId('');
-    setCandidateFullName('');
-    setCandidateAge('');
-    setCandidateGender('');
-    setCandidateRegion('');
-    setShowModal(false);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+        <div className="text-2xl">Loading...</div>
+      </div>
+    );
   }
 
   if (!campaign) {
@@ -91,110 +77,42 @@ export default function CampaignDetails() {
         <p className="text-gray-700">{campaign.description}</p>
         <div className="flex justify-between text-gray-600">
           <span>
-            <span className="font-semibold">Start:</span> {formatDate(campaign.startDate)}
+            <span className="font-semibold">Start:</span> {formatDate(campaign.start)}
           </span>
           <span>
-            <span className="font-semibold">End:</span> {formatDate(campaign.endDate)}
+            <span className="font-semibold">End:</span> {formatDate(campaign.end)}
           </span>
         </div>
         <div className="text-gray-700">
-          <span className="font-semibold">Number of Candidates:</span> {campaign.numCandidates}
+          <span className="font-semibold">Number of Candidates:</span> {campaign.num_candidates}
         </div>
         <button
-          onClick={() => setShowModal(true)}
-          className="w-full bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-lg text-lg font-semibold hover:from-green-600 hover:to-green-800 transition-all shadow-lg"
+          className="w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 mt-4"
+          onClick={() => router.push(`/admin/campaign/${id}/add-candidate`)}
         >
-          Add Candidates
+          Add Candidate
         </button>
         {/* Candidates List */}
-        <div>
-          <h2 className="text-xl font-semibold text-indigo-700 mt-6 mb-2">Candidates</h2>
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-indigo-700 mb-4">Candidates</h2>
           {candidates.length === 0 ? (
-            <div className="text-gray-400">No candidates added yet.</div>
+            <div className="text-gray-500">No candidates yet.</div>
           ) : (
-            <ul className="space-y-2">
-              {candidates.map((cand) => (
-                <li key={cand.id} className="bg-indigo-50 rounded p-3 text-gray-800 shadow">
-                  <div className="font-semibold">{cand.name}</div>
-                  <div className="text-sm text-gray-700">
-                    <div><span className="font-semibold">Voter ID:</span> {cand.voterId}</div>
-                    <div><span className="font-semibold">Age:</span> {cand.age}</div>
-                    <div><span className="font-semibold">Gender:</span> {cand.gender}</div>
-                    <div><span className="font-semibold">Region:</span> {cand.region}</div>
-                  </div>
+            <ul className="space-y-4">
+              {candidates.map(candidate => (
+                <li key={candidate.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
+                  <img
+                    src={candidate.photo_url || '/placeholder-avatar.png'}
+                    alt={candidate.full_name || candidate.name}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-indigo-400"
+                  />
+                  <span className="text-lg font-medium text-gray-800">{candidate.full_name || candidate.name}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        <button
-          onClick={() => {
-            localStorage.removeItem('campaigns');
-            localStorage.removeItem('candidates');
-            window.location.reload();
-          }}
-          className="mt-4 px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-        >
-          Clear Campaign & Candidate Data
-        </button>
       </div>
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-600 bg-opacity-95">
-          <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md space-y-4">
-            <h2 className="text-2xl font-bold text-indigo-700 mb-2">Add Candidate</h2>
-            <input
-              type="text"
-              placeholder="Voter ID"
-              value={candidateVoterId}
-              onChange={e => setCandidateVoterId(e.target.value)}
-              className="border border-gray-300 p-3 rounded w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={candidateFullName}
-              onChange={e => setCandidateFullName(e.target.value)}
-              className="border border-gray-300 p-3 rounded w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <input
-              type="number"
-              placeholder="Age"
-              value={candidateAge}
-              onChange={e => setCandidateAge(e.target.value)}
-              className="border border-gray-300 p-3 rounded w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <input
-              type="text"
-              placeholder="Gender"
-              value={candidateGender}
-              onChange={e => setCandidateGender(e.target.value)}
-              className="border border-gray-300 p-3 rounded w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <input
-              type="text"
-              placeholder="Region"
-              value={candidateRegion}
-              onChange={e => setCandidateRegion(e.target.value)}
-              className="border border-gray-300 p-3 rounded w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <div className="flex justify-end space-x-2 mt-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddCandidate}
-                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

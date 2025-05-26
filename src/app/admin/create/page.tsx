@@ -1,5 +1,7 @@
 'use client';
 
+import { db } from '@/lib/firebase';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -11,40 +13,60 @@ export default function CreateVotingSection() {
   const [numCandidates, setNumCandidates] = useState(2);
   const router = useRouter();
 
-  const handleCreate = () => {
-    // Get existing campaigns
-    const existing = typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('campaigns') || '[]')
-      : [];
-    // Assign next numeric id
-    const nextId = existing.length > 0
-      ? (Math.max(...existing.map((c: any) => Number(c.id) || 0)) + 1).toString()
-      : '1';
+  const handleCreate = async () => {
+    try {
+      // Ensure dates are selected
+      if (!startDate || !endDate) {
+        alert('Please select both start and end dates.');
+        return;
+      }
 
-    // Collect all details
-    const votingDetails = {
-      id: nextId,
-      title,
-      description,
-      startDate,
-      endDate,
-      numCandidates,
-    };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
-    // Save to localStorage
-    localStorage.setItem('campaigns', JSON.stringify([...existing, votingDetails]));
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        alert('Invalid date format.');
+        return;
+      }
 
-    // Redirect to the admin dashboard after creation
-    router.push('/admin/dashboard');
+      // Create a slug from the title to use as the document ID
+      const campaignId = title
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')      // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, ''); // Remove special characters
+
+      const votingDetails = {
+        title,
+        description,
+        start_date: Timestamp.fromDate(start),
+        end_date: Timestamp.fromDate(end),
+        num_candidates: numCandidates,
+        created_at: Timestamp.now(),
+      };
+
+      // Save document with custom ID
+      await setDoc(doc(db, 'campaigns', campaignId), votingDetails);
+      router.push('/admin/dashboard');
+    } catch (error: any) {
+      alert('Failed to create voting section: ' + error.message);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-12 space-y-8">
-      <h1 className="text-4xl font-bold">Create New Voting Section</h1>
-      <p className="text-lg">Set up a new voting section for upcoming elections.</p>
-
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-8 space-y-6">
-        <div className="space-y-4">
+    <div className="min-h-screen w-full bg-white flex flex-col">
+      <div className="flex justify-end items-center w-full p-6">
+        <button
+          onClick={handleCreate}
+          className="bg-green-600 text-white px-6 py-2 rounded-lg text-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+        >
+          Create Voting
+        </button>
+      </div>
+      <div className="flex flex-col flex-1 items-center justify-center w-full px-4 py-8">
+        <h1 className="text-4xl font-bold mb-2 text-indigo-700">Create New Voting Section</h1>
+        <p className="text-lg mb-8 text-gray-700">Set up a new voting section for upcoming elections.</p>
+        <div className="w-full max-w-2xl space-y-6">
           <input
             type="text"
             placeholder="Enter Voting Title"
@@ -58,36 +80,29 @@ export default function CreateVotingSection() {
             onChange={(e) => setDescription(e.target.value)}
             className="border border-gray-300 p-3 rounded-lg w-full h-24 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          <input
-            type="date"
-            placeholder="Start Date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          <input
-            type="date"
-            placeholder="End Date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
+          <div className="flex flex-col md:flex-row gap-4">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="border border-gray-300 p-3 rounded-lg w-full md:w-1/2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="border border-gray-300 p-3 rounded-lg w-full md:w-1/2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
           <input
             type="number"
             min={2}
-            placeholder="Number of Candidates"
             value={numCandidates}
             onChange={(e) => setNumCandidates(Number(e.target.value))}
             className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="Number of Candidates"
           />
         </div>
-
-        <button
-          onClick={handleCreate}
-          className="w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          Create Voting
-        </button>
       </div>
     </div>
   );
