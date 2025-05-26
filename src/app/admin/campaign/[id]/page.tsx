@@ -5,12 +5,38 @@ import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+// Candidate type
+interface Candidate {
+  id: string;
+  full_name: string;
+  voter_id: string;
+  father_name: string;
+  mother_name: string;
+  dob: string;
+  gender: string;
+  address: string;
+  photo_url: string;
+  id_proof_url: string;
+  created_at: any; // or Timestamp
+}
+
+// Campaign type
+interface Campaign {
+  id: string;
+  title: string;
+  description: string;
+  start: Date;
+  end: Date;
+  num_candidates?: number;
+  [key: string]: any;
+}
+
 export default function CampaignDetails() {
   const router = useRouter();
   const params = useParams();
   const { id } = params as { id: string };
-  const [campaign, setCampaign] = useState<any>(null);
-  const [candidates, setCandidates] = useState<any[]>([]);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,9 +47,13 @@ export default function CampaignDetails() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setCampaign({
+          id: docSnap.id,
+          title: data.title,
+          description: data.description,
+          start: data.start_date?.toDate?.() ?? new Date(data.start_date),
+          end: data.end_date?.toDate?.() ?? new Date(data.end_date),
+          num_candidates: data.num_candidates,
           ...data,
-          start: data.start_date?.toDate?.() || new Date(data.start_date),
-          end: data.end_date?.toDate?.() || new Date(data.end_date),
         });
       } else {
         setCampaign(null);
@@ -34,10 +64,22 @@ export default function CampaignDetails() {
     async function fetchCandidates() {
       const candidatesCol = collection(db, 'campaigns', id, 'candidates');
       const candidatesSnap = await getDocs(candidatesCol);
-      const candidatesList = candidatesSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const candidatesList = candidatesSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          full_name: data.full_name ?? '',
+          voter_id: data.voter_id ?? '',
+          father_name: data.father_name ?? '',
+          mother_name: data.mother_name ?? '',
+          dob: data.dob ?? '',
+          gender: data.gender ?? '',
+          address: data.address ?? '',
+          photo_url: data.photo_url ?? '',
+          id_proof_url: data.id_proof_url ?? '',
+          created_at: data.created_at ?? null,
+        };
+      });
       setCandidates(candidatesList);
     }
 
@@ -103,10 +145,10 @@ export default function CampaignDetails() {
                 <li key={candidate.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
                   <img
                     src={candidate.photo_url || '/placeholder-avatar.png'}
-                    alt={candidate.full_name || candidate.name}
+                    alt={candidate.full_name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-indigo-400"
                   />
-                  <span className="text-lg font-medium text-gray-800">{candidate.full_name || candidate.name}</span>
+                  <span className="text-lg font-medium text-gray-800">{candidate.full_name}</span>
                 </li>
               ))}
             </ul>
