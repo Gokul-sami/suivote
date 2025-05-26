@@ -5,19 +5,19 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface Candidate {
-  id: string;
-  full_name: string;
-  voter_id: string;
-  father_name: string;
-  mother_name: string;
-  dob: string;
-  gender: string;
-  address: string;
-  photo_url: string;
-  id_proof_url: string;
-  created_at: unknown; // or Timestamp
-}
+// interface Candidate {
+//   id: string;
+//   full_name: string;
+//   voter_id: string;
+//   father_name: string;
+//   mother_name: string;
+//   dob: string;
+//   gender: string;
+//   address: string;
+//   photo_url: string;
+//   id_proof_url: string;
+//   created_at: unknown; // or Timestamp
+// }
 
 // Campaign type
 interface Campaign {
