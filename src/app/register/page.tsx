@@ -2,15 +2,27 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
 import {
   signInWithPhoneNumber,
   RecaptchaVerifier,
   ConfirmationResult,
 } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, setDoc } from "firebase/firestore";
 import { Ed25519Provider } from 'key-did-provider-ed25519'
 import KeyResolver from 'key-did-resolver'
 import { DID } from 'dids'
+
+const saveVoterData = async (voterId: string, data: any) => {
+  await setDoc(doc(db, "voters", voterId), data);
+};
+
+const uploadFile = async (file: File, path: string) => {
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return await getDownloadURL(storageRef);
+};
 
 // Country data with name, dial code, and code
 const countries = [
@@ -230,16 +242,39 @@ export default function RegisterPage() {
       const confirmationResult = confirmationResultRef.current;
       if (!confirmationResult) throw new Error("No OTP request found");
 
-      await confirmationResult.confirm(otp);
+      const userCredential = await confirmationResult.confirm(otp);
+      const user = userCredential.user;
 
       const did = await createDID();
       if (did) {
         localStorage.setItem("did", did);
-        alert(`Your DID: ${did}`);
       } else {
         setError("Failed to create DID.");
         return;
       }
+
+      const [photoUrl, idProofUrl] = await Promise.all([
+        uploadFile(photo!, `voters/${voterId}/photo.jpg`),
+        uploadFile(idProof!, `voters/${voterId}/idproof.jpg`)
+      ]);
+
+      await saveVoterData(voterId, {
+        fullName,
+        voterId,
+        fatherName,
+        motherName,
+        dob,
+        gender,
+        address,
+        phone: `${selectedCountry.dialCode}${phone}`,
+        photoUrl,
+        idProofUrl,
+        did,
+        uid: user.uid,
+        createdAt: new Date().toISOString()
+      });
+
+      alert(`Your DID: ${did}`);
       router.push("/dashboard");
       
     } catch {
@@ -265,6 +300,7 @@ export default function RegisterPage() {
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Full Name"
               className="w-full p-2 mb-3 border rounded-md"
+              required
             />
             <input
               type="text"
@@ -279,6 +315,7 @@ export default function RegisterPage() {
               onChange={(e) => setFatherName(e.target.value)}
               placeholder="Father's Name"
               className="w-full p-2 mb-3 border rounded-md"
+              required
             />
             <input
               type="text"
@@ -286,6 +323,7 @@ export default function RegisterPage() {
               onChange={(e) => setMotherName(e.target.value)}
               placeholder="Mother's Name"
               className="w-full p-2 mb-3 border rounded-md"
+              required
             />
             <input
               type="text"
@@ -424,3 +462,4 @@ export default function RegisterPage() {
     </main>
   );
 }
+
