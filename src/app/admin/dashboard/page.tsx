@@ -17,7 +17,7 @@ interface Candidate {
   address: string;
   photo_url: string;
   id_proof_url: string;
-  created_at: any; // or Timestamp
+  created_at: unknown; // or Timestamp
 }
 
 // Campaign type
@@ -28,7 +28,7 @@ interface Campaign {
   start: Date;
   end: Date;
   num_candidates?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export default function AdminDashboard() {
