@@ -5,7 +5,6 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-// Candidate type
 interface Candidate {
   id: string;
   full_name: string;
