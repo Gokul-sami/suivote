@@ -159,8 +159,28 @@ export default function RegisterPage() {
     }
   };
 
-  const createDID = (phone: string) => {
-    return `did:example:${phone}-${Math.random().toString(36).substring(2, 10)}`;
+  const createDID = async (): Promise<string | null> => {
+    try {
+    const storedKey = window.sessionStorage.getItem("ephemeralPrivateKey");
+    if (!storedKey) {
+      throw new Error("Ephemeral private key not found in session storage.");
+    }
+
+    // Convert "1,2,3,..." back to Uint8Array
+    const seedArray = storedKey.split(',').map((num) => parseInt(num, 10));
+    const seed = new Uint8Array(storedKey);
+
+    const provider = new Ed25519Provider(seed);
+    const did = new DID({ provider, resolver: KeyResolver.getResolver() });
+    await did.authenticate();
+
+    console.log("✅ DID created:", did.id);
+    return did.id;
+  } catch (error) {
+    console.error("❌ Failed to create DID:", error);
+    return null;
+  }
+
   };
 
   const handleSendOtp = async () => {
@@ -212,10 +232,14 @@ export default function RegisterPage() {
 
       await confirmationResult.confirm(otp);
 
-      const did = createDID(phone);
-      localStorage.setItem("did", did);
-
-      alert(`Your DID: ${did}`);
+      const did = await createDID();
+      if (did) {
+        localStorage.setItem("did", did);
+        alert(`Your DID: ${did}`);
+      } else {
+        setError("Failed to create DID.");
+        return;
+      }
       router.push("/dashboard");
       
     } catch {
