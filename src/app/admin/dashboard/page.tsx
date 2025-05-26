@@ -5,10 +5,36 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+// Candidate type
+interface Candidate {
+  id: string;
+  full_name: string;
+  voter_id: string;
+  father_name: string;
+  mother_name: string;
+  dob: string;
+  gender: string;
+  address: string;
+  photo_url: string;
+  id_proof_url: string;
+  created_at: any; // or Timestamp
+}
+
+// Campaign type
+interface Campaign {
+  id: string;
+  title: string;
+  description: string;
+  start: Date;
+  end: Date;
+  num_candidates?: number;
+  [key: string]: any;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const [ongoing, setOngoing] = useState<any[]>([]);
-  const [scheduled, setScheduled] = useState<any[]>([]);
+  const [ongoing, setOngoing] = useState<Campaign[]>([]);
+  const [scheduled, setScheduled] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,8 +42,8 @@ export default function AdminDashboard() {
       setLoading(true);
       const snapshot = await getDocs(collection(db, 'campaigns'));
       const now = new Date();
-      const ongoingList: any[] = [];
-      const scheduledList: any[] = [];
+      const ongoingList: Campaign[] = [];
+      const scheduledList: Campaign[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const start = data.start_date?.toDate?.() || new Date(data.start_date);
