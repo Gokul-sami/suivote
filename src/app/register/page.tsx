@@ -1,18 +1,19 @@
-  "use client";
+"use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
   ConfirmationResult,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
 } from "firebase/auth";
+import { collection, getDocs } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-  export default function RegisterPage() {
-    const router = useRouter();
+export default function RegisterPage() {
+  const router = useRouter();
 
-    const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1);
 
   // Step 1 state
   const [fullName, setFullName] = useState("");
@@ -29,30 +30,35 @@ import {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
 
-    const [error, setError] = useState("");
-    const [otpSent, setOtpSent] = useState(false);
-    const [sendingOtp, setSendingOtp] = useState(false);
-    const [verifyingOtp, setVerifyingOtp] = useState(false);
-    const [info, setInfo] = useState("");
+  const [error, setError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [info, setInfo] = useState("");
 
-    const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-    const confirmationResultRef = useRef<ConfirmationResult | null>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [showCampaigns, setShowCampaigns] = useState(true); // Show campaigns first
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
 
-    useEffect(() => {
-      if (!recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = new RecaptchaVerifier(
-          auth,
-          "recaptcha-container",
-          {
-            size: "invisible",
-            callback: () => console.log("reCAPTCHA solved"),
-            "expired-callback": () => {
-              setError("reCAPTCHA expired. Please refresh.");
-              setStep(1);
-            },
-          }
-        );
-      }
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const confirmationResultRef = useRef<ConfirmationResult | null>(null);
+
+  useEffect(() => {
+    if (!recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: () => console.log("reCAPTCHA solved"),
+          "expired-callback": () => {
+            setError("reCAPTCHA expired. Please refresh.");
+            setStep(1);
+          },
+        }
+      );
+    }
 
     return () => {
       if (recaptchaVerifierRef.current) {
@@ -62,31 +68,31 @@ import {
     };
   }, []);
 
-    const validateStep1 = () => {
-      if (!/^[A-Z]{3}[0-9]{7}$/.test(voterId)) {
-        setError(
-          "Voter ID must be 3 uppercase letters followed by 7 digits (total 10 characters)."
-        );
-        return false;
-      }
+  const validateStep1 = () => {
+    if (!/^[A-Z]{3}[0-9]{7}$/.test(voterId)) {
+      setError(
+        "Voter ID must be 3 uppercase letters followed by 7 digits (total 10 characters)."
+      );
+      return false;
+    }
 
-      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
-        setError("Date of Birth must be in format dd/mm/yyyy.");
-        return false;
-      }
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
+      setError("Date of Birth must be in format dd/mm/yyyy.");
+      return false;
+    }
 
-      if (address.trim().length < 20) {
-        setError("Address must be at least 20 characters long.");
-        return false;
-      }
+    if (address.trim().length < 20) {
+      setError("Address must be at least 20 characters long.");
+      return false;
+    }
 
     if (!photo || !idProof) {
       setError("Please upload both Photo and Identity Proof.");
       return false;
     }
 
-      return true;
-    };
+    return true;
+  };
 
   const handleNext = () => {
     setError("");
@@ -101,11 +107,11 @@ import {
     return `did:example:${phone}-${Math.random().toString(36).substring(2, 10)}`;
   };
 
-    const handleSendOtp = async () => {
-      setError("");
-      setInfo("");
-      setOtpSent(false);
-      setSendingOtp(true);
+  const handleSendOtp = async () => {
+    setError("");
+    setInfo("");
+    setOtpSent(false);
+    setSendingOtp(true);
 
     if (!/^\d{10}$/.test(phone.trim())) {
       setError("Phone number must be exactly 10 digits.");
@@ -117,7 +123,7 @@ import {
       const appVerifier = recaptchaVerifierRef.current;
       const formattedPhone = "+91" + phone.trim();
 
-        if (!appVerifier) throw new Error("reCAPTCHA not ready");
+      if (!appVerifier) throw new Error("reCAPTCHA not ready");
 
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       confirmationResultRef.current = result;
@@ -139,20 +145,21 @@ import {
     }
   };
 
-    const handleVerifyOtp = async () => {
-      setVerifyingOtp(true);
-      setError("");
-      setInfo("");
+  const handleVerifyOtp = async () => {
+    setVerifyingOtp(true);
+    setError("");
+    setInfo("");
 
-      try {
-        const confirmationResult = confirmationResultRef.current;
-        if (!confirmationResult) throw new Error("No OTP request found");
+    try {
+      const confirmationResult = confirmationResultRef.current;
+      if (!confirmationResult) throw new Error("No OTP request found");
 
       await confirmationResult.confirm(otp);
 
       // Create and store DID (not shown to user)
       const did = createDID(phone);
       localStorage.setItem("did", did);
+      localStorage.setItem("campaign_id", selectedCampaign?.id || "");
 
       alert(`Your DID: ${did}`);
       
@@ -166,15 +173,129 @@ import {
     }
   };
 
-    return (
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-lg">
-          <h1 className="text-2xl font-bold text-center mb-4 text-blue-600">
-            Register
-          </h1>
-          <div id="recaptcha-container" />
+  // Fetch campaigns (ongoing and scheduled)
+  const fetchCampaigns = async () => {
+    setCampaignsLoading(true);
+    try {
+      const snapshot = await getDocs(collection(db, 'campaigns'));
+      const now = new Date();
+      const list: any[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const start = data.start_date?.toDate?.() || new Date(data.start_date);
+        const end = data.end_date?.toDate?.() || new Date(data.end_date);
+        if ((start <= now && end >= now) || start > now) {
+          list.push({
+            id: docSnap.id,
+            title: data.title,
+            description: data.description,
+            start,
+            end,
+          });
+        }
+      });
+      setCampaigns(list);
+    } catch (e) {
+      setError('Failed to load campaigns.');
+    } finally {
+      setCampaignsLoading(false);
+    }
+  };
 
-        {step === 1 ? (
+  // Helper to format date as dd-mm-yyyy
+  function formatDate(date: Date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-lg">
+        <h1 className="text-2xl font-bold text-center mb-4 text-blue-600">
+          Register
+        </h1>
+        <div id="recaptcha-container" />
+
+        {showCampaigns ? (
+          <div className="mt-6">
+            <h2 className="text-xl font-bold text-center mb-4 text-indigo-700">Select a Campaign to Register</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Ongoing Campaigns */}
+              <div className="bg-white rounded-lg shadow-lg p-4 border border-indigo-200">
+                <h3 className="text-lg font-semibold text-indigo-700 mb-2">Ongoing Campaigns</h3>
+                {campaignsLoading ? (
+                  <div className="text-center text-gray-500">Loading...</div>
+                ) : campaigns.filter(c => {
+                  const now = new Date();
+                  return c.start <= now && c.end >= now;
+                }).length === 0 ? (
+                  <div className="text-center text-gray-500">No ongoing campaigns.</div>
+                ) : (
+                  <ul className="space-y-3">
+                    {campaigns.filter(c => {
+                      const now = new Date();
+                      return c.start <= now && c.end >= now;
+                    }).map(campaign => (
+                      <li
+                        key={campaign.id}
+                        className="cursor-pointer bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg px-3 py-2 shadow hover:scale-105 hover:shadow-lg transition-all border border-indigo-200"
+                        onClick={() => {
+                          setShowCampaigns(false);
+                          setStep(1);
+                          setSelectedCampaign(campaign);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-base font-semibold text-indigo-700">{campaign.title}</span>
+                          <span className="text-xs text-gray-700">{formatDate(campaign.start)} to {formatDate(campaign.end)}</span>
+                          <span className="text-xs text-gray-600 mt-1">{campaign.description}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {/* Scheduled Campaigns */}
+              <div className="bg-white rounded-lg shadow-lg p-4 border border-indigo-200">
+                <h3 className="text-lg font-semibold text-indigo-700 mb-2">Scheduled Campaigns</h3>
+                {campaignsLoading ? (
+                  <div className="text-center text-gray-500">Loading...</div>
+                ) : campaigns.filter(c => {
+                  const now = new Date();
+                  return c.start > now;
+                }).length === 0 ? (
+                  <div className="text-center text-gray-500">No scheduled campaigns.</div>
+                ) : (
+                  <ul className="space-y-3">
+                    {campaigns.filter(c => {
+                      const now = new Date();
+                      return c.start > now;
+                    }).map(campaign => (
+                      <li
+                        key={campaign.id}
+                        className="cursor-pointer bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg px-3 py-2 shadow hover:scale-105 hover:shadow-lg transition-all border border-indigo-200"
+                        onClick={() => {
+                          setShowCampaigns(false);
+                          setStep(1);
+                          setSelectedCampaign(campaign);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-base font-semibold text-indigo-700">{campaign.title}</span>
+                          <span className="text-xs text-gray-700">{formatDate(campaign.start)} to {formatDate(campaign.end)}</span>
+                          <span className="text-xs text-gray-600 mt-1">{campaign.description}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : step === 1 ? (
           <>
             <input
               type="text"
@@ -250,7 +371,7 @@ import {
               />
             </label>
 
-              {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+            {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
             <button
               onClick={handleNext}
@@ -270,43 +391,46 @@ import {
               className="w-full p-2 mb-3 border rounded-md"
             />
 
-              <button
-                onClick={handleSendOtp}
-                className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition mb-3"
-                disabled={sendingOtp}
-              >
-                {sendingOtp ? "Sending OTP..." : "Send OTP"}
-              </button>
+            <button
+              onClick={handleSendOtp}
+              className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition mb-3"
+              disabled={sendingOtp}
+            >
+              {sendingOtp ? "Sending OTP..." : "Send OTP"}
+            </button>
 
-              {otpSent && (
-                <>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter OTP"
-                    maxLength={6}
-                    className="w-full p-2 mb-3 border rounded-md"
-                  />
+            {otpSent && (
+              <>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Enter OTP"
+                  maxLength={6}
+                  className="w-full p-2 mb-3 border rounded-md"
+                />
 
-                  <button
-                    onClick={handleVerifyOtp}
-                    className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-                    disabled={verifyingOtp}
-                  >
-                    {verifyingOtp ? "Verifying..." : "Verify OTP"}
-                  </button>
-                </>
-              )}
+                <button
+                  onClick={handleVerifyOtp}
+                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+                  disabled={verifyingOtp}
+                >
+                  {verifyingOtp ? "Verifying..." : "Verify OTP"}
+                </button>
+              </>
+            )}
 
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-              {info && <p className="text-green-600 text-sm mt-2">{info}</p>}
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {info && <p className="text-green-600 text-sm mt-2">{info}</p>}
 
             <button
-              onClick={() => setStep(1)}
+              onClick={() => {
+                setShowCampaigns(true);
+                setStep(1);
+              }}
               className="w-full mt-2 text-blue-600 hover:underline text-sm"
             >
-              ← Back to Info Form
+              ← Back to Campaign Selection
             </button>
           </>
         )}
@@ -314,3 +438,4 @@ import {
     </main>
   );
 }
+
