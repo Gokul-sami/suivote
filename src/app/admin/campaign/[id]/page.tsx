@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
@@ -27,24 +27,13 @@ interface Campaign {
   start: Date;
   end: Date;
   num_candidates?: number;
-  created_at?: unknown; // or Timestamp if you import it from Firestore
-  [key: string]: unknown;
-}
-
-// Campaign type
-interface Campaign {
-  id: string;
-  title: string;
-  description: string;
-  start: Date;
-  end: Date;
-  num_candidates?: number;
 }
 
 export default function CampaignDetails() {
   const router = useRouter();
   const params = useParams();
   const { id } = params as { id: string };
+
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [candidates, setCandidates] = useState<_Candidate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,52 +41,60 @@ export default function CampaignDetails() {
   useEffect(() => {
     async function fetchCampaign() {
       setLoading(true);
-      const docRef = doc(db, 'campaigns', id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setCampaign({
-          id: docSnap.id,
-          title: data.title,
-          description: data.description,
-          start: data.start_date?.toDate?.() ?? new Date(data.start_date),
-          end: data.end_date?.toDate?.() ?? new Date(data.end_date),
-          num_candidates: data.num_candidates,
-          ...data,
-        });
-      } else {
-        setCampaign(null);
+      try {
+        const docRef = doc(db, 'campaigns', id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCampaign({
+            id: docSnap.id,
+            title: data.title ?? '',
+            description: data.description ?? '',
+            start: data.start_date?.toDate?.() ?? new Date(data.start_date),
+            end: data.end_date?.toDate?.() ?? new Date(data.end_date),
+            num_candidates: data.num_candidates ?? 0,
+          });
+        } else {
+          setCampaign(null);
+        }
+      } catch (error) {
+        console.error("Error fetching campaign:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
     async function fetchCandidates() {
-      const candidatesCol = collection(db, 'campaigns', id, 'candidates');
-      const candidatesSnap = await getDocs(candidatesCol);
-      const candidatesList = candidatesSnap.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          full_name: data.full_name ?? '',
-          voter_id: data.voter_id ?? '',
-          father_name: data.father_name ?? '',
-          mother_name: data.mother_name ?? '',
-          dob: data.dob ?? '',
-          gender: data.gender ?? '',
-          address: data.address ?? '',
-          photo_url: data.photo_url ?? '',
-          id_proof_url: data.id_proof_url ?? '',
-          created_at: data.created_at ?? null,
-        };
-      });
-      setCandidates(candidatesList);
+      try {
+        const candidatesCol = collection(db, 'campaigns', id, 'candidates');
+        const candidatesSnap = await getDocs(candidatesCol);
+        const candidatesList = candidatesSnap.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            full_name: data.full_name ?? '',
+            voter_id: data.voter_id ?? '',
+            father_name: data.father_name ?? '',
+            mother_name: data.mother_name ?? '',
+            dob: data.dob ?? '',
+            gender: data.gender ?? '',
+            address: data.address ?? '',
+            photo_url: data.photo_url ?? '',
+            id_proof_url: data.id_proof_url ?? '',
+            created_at: data.created_at ?? null,
+          };
+        });
+        setCandidates(candidatesList);
+      } catch (error) {
+        console.error("Error fetching candidates:", error);
+      }
     }
 
     fetchCampaign();
     fetchCandidates();
   }, [id]);
 
-  // Helper to format date as dd-mm-yyyy
   function formatDate(date: Date) {
     if (!(date instanceof Date) || isNaN(date.getTime())) return '';
     const day = String(date.getDate()).padStart(2, '0');
@@ -144,7 +141,8 @@ export default function CampaignDetails() {
         >
           Add Candidate
         </button>
-        {/* Candidates List */}
+
+        {/* Candidate List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-indigo-700 mb-4">Candidates</h2>
           {candidates.length === 0 ? (
