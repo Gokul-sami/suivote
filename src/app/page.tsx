@@ -50,7 +50,7 @@ export default function HomePage() {
 
       // 4. Redirect to Google OAuth with nonce as the "state"
       const clientId = "858676690672-ovpth6ambmpu19kl1rhj00l56dgp8kut.apps.googleusercontent.com";
-      const redirectUri = "http://localhost:3000/login-callback"; // You need to create this route
+      const redirectUri = window.location.origin + "/login-callback";
       const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid%20email&nonce=${nonce}&state=${nonce}`;
 
       window.location.href = googleAuthUrl;
