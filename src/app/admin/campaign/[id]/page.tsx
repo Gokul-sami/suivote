@@ -17,7 +17,18 @@ interface Candidate {
   address: string;
   photo_url: string;
   id_proof_url: string;
-  created_at: any; // or Timestamp
+  created_at: unknown | null;
+}
+
+interface Campaign {
+  id: string;
+  title: string;
+  description: string;
+  start: Date;
+  end: Date;
+  num_candidates?: number;
+  created_at?: unknown; // or Timestamp if imported from Firestore
+  [key: string]: unknown;
 }
 
 // Campaign type
@@ -28,7 +39,6 @@ interface Campaign {
   start: Date;
   end: Date;
   num_candidates?: number;
-  [key: string]: any;
 }
 
 export default function CampaignDetails() {
