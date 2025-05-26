@@ -2,12 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
 import {
   signInWithPhoneNumber,
   RecaptchaVerifier,
   ConfirmationResult,
 } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, setDoc } from "firebase/firestore";
+
+const saveVoterData = async (voterId: string, data: any) => {
+  await setDoc(doc(db, "voters", voterId), data);
+};
+
+const uploadFile = async (file: File, path: string) => {
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return await getDownloadURL(storageRef);
+};
 
 // Country data with name, dial code, and code
 const countries = [
@@ -205,18 +217,47 @@ export default function RegisterPage() {
 
     try {
       const confirmationResult = confirmationResultRef.current;
-      if (!confirmationResult) throw new Error("No OTP request found");
+      if (!confirmationResult) {
+        throw new Error("OTP session expired. Please request a new OTP.");
+      }
 
-      await confirmationResult.confirm(otp);
+      // Add better error handling
+      const result = await confirmationResult.confirm(otp);
+      if (!result?.user) {
+        throw new Error("Verification failed");
+      }
 
+      const user = result.user;
+      console.log("Successfully verified user:", user.phoneNumber);
+
+      // Rest of your success logic...
       const did = createDID(phone);
       localStorage.setItem("did", did);
 
-      alert(`Your DID: ${did}`);
+      const [photoUrl, idProofUrl] = await Promise.all([
+        uploadFile(photo!, `voters/${voterId}/photo.jpg`),
+        uploadFile(idProof!, `voters/${voterId}/idproof.jpg`)
+      ]);
+
+      await saveVoterData(voterId, {
+        fullName,
+        voterId,
+        fatherName,
+        motherName,
+        dob,
+        gender,
+        address,
+        phone: `${selectedCountry.dialCode}${phone}`,
+        photoUrl,
+        idProofUrl,
+        did,
+      });
+
       router.push("/dashboard");
       
-    } catch {
-      setError("Invalid OTP or verification failed.");
+    } catch (err: any) {
+      console.error("OTP verification error:", err);
+      setError(err.message || "Invalid OTP or verification failed.");
     } finally {
       setVerifyingOtp(false);
     }
@@ -238,6 +279,7 @@ export default function RegisterPage() {
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Full Name"
               className="w-full p-2 mb-3 border rounded-md"
+              required
             />
             <input
               type="text"
@@ -252,6 +294,7 @@ export default function RegisterPage() {
               onChange={(e) => setFatherName(e.target.value)}
               placeholder="Father's Name"
               className="w-full p-2 mb-3 border rounded-md"
+              required
             />
             <input
               type="text"
@@ -259,6 +302,7 @@ export default function RegisterPage() {
               onChange={(e) => setMotherName(e.target.value)}
               placeholder="Mother's Name"
               className="w-full p-2 mb-3 border rounded-md"
+              required
             />
             <input
               type="text"
