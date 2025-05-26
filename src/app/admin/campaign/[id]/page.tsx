@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-interface Candidate {
+interface _Candidate {
   id: string;
   full_name: string;
   voter_id: string;
@@ -46,7 +46,7 @@ export default function CampaignDetails() {
   const params = useParams();
   const { id } = params as { id: string };
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [candidates, setCandidates] = useState<_Candidate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
