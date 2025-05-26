@@ -54,54 +54,89 @@ export default function CreateVotingSection() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col">
-      <div className="flex justify-end items-center w-full p-6">
-        <button
-          onClick={handleCreate}
-          className="bg-green-600 text-white px-6 py-2 rounded-lg text-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
-        >
-          Create Voting
-        </button>
-      </div>
+    <div className="min-h-screen w-full bg-gradient-to-r from-indigo-500 to-purple-600 flex flex-col items-center justify-center px-6 py-12 space-y-8">
       <div className="flex flex-col flex-1 items-center justify-center w-full px-4 py-8">
-        <h1 className="text-4xl font-bold mb-2 text-indigo-700">Create New Voting Section</h1>
-        <p className="text-lg mb-8 text-gray-700">Set up a new voting section for upcoming elections.</p>
-        <div className="w-full max-w-2xl space-y-6">
-          <input
-            type="text"
-            placeholder="Enter Voting Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          <textarea
-            placeholder="Enter Voting Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="border border-gray-300 p-3 rounded-lg w-full h-24 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-10 space-y-6 border border-gray-200">
+          <h1 className="text-4xl font-bold mb-2 text-indigo-700 text-center">Create New Voting Section</h1>
+          <p className="text-lg mb-8 text-gray-700 text-center">Set up a new voting section for upcoming elections.</p>
+          {/* Voting Title */}
+          <div>
+            <label className="block mb-1 text-gray-700 font-bold" htmlFor="voting-title">
+              Voting Title
+            </label>
             <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border border-gray-300 p-3 rounded-lg w-full md:w-1/2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border border-gray-300 p-3 rounded-lg w-full md:w-1/2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              id="voting-title"
+              type="text"
+              placeholder="Enter Voting Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
             />
           </div>
-          <input
-            type="number"
-            min={2}
-            value={numCandidates}
-            onChange={(e) => setNumCandidates(Number(e.target.value))}
-            className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="Number of Candidates"
-          />
+          {/* Voting Description */}
+          <div>
+            <label className="block mb-1 text-gray-700 font-bold" htmlFor="voting-description">
+              Voting Description
+            </label>
+            <textarea
+              id="voting-description"
+              placeholder="Enter Voting Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="border border-gray-300 p-3 rounded-lg w-full h-24 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
+            />
+          </div>
+          {/* Dates */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/2">
+              <label className="block mb-1 text-gray-700 font-bold" htmlFor="start-date">
+                Start Date
+              </label>
+              <input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
+              />
+            </div>
+            <div className="w-full md:w-1/2">
+              <label className="block mb-1 text-gray-700 font-bold" htmlFor="end-date">
+                End Date
+              </label>
+              <input
+                id="end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
+              />
+            </div>
+          </div>
+          {/* Number of Candidates */}
+          <div>
+            <label className="block mb-1 text-gray-700 font-bold" htmlFor="num-candidates">
+              Number of Candidates
+            </label>
+            <input
+              id="num-candidates"
+              type="number"
+              min={2}
+              value={numCandidates}
+              onChange={(e) => setNumCandidates(Number(e.target.value))}
+              className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
+              placeholder="Number of Candidates"
+            />
+          </div>
+          {/* Centered Button */}
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={handleCreate}
+              className="bg-gradient-to-r from-green-500 to-green-700 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:scale-105 hover:from-green-600 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200"
+            >
+              Create Voting
+            </button>
+          </div>
         </div>
       </div>
     </div>
