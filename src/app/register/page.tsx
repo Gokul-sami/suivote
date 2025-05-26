@@ -10,6 +10,9 @@ import {
 } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore";
+import { Ed25519Provider } from 'key-did-provider-ed25519'
+import KeyResolver from 'key-did-resolver'
+import { DID } from 'dids'
 
 const saveVoterData = async (voterId: string, data: any) => {
   await setDoc(doc(db, "voters", voterId), data);
@@ -171,13 +174,13 @@ export default function RegisterPage() {
   const createDID = async (): Promise<string | null> => {
     try {
     const storedKey = window.sessionStorage.getItem("ephemeralPrivateKey");
+    console.log("Stored Key:", storedKey);
     if (!storedKey) {
       throw new Error("Ephemeral private key not found in session storage.");
     }
 
-    // Convert "1,2,3,..." back to Uint8Array
-    const seedArray = storedKey.split(',').map((num) => parseInt(num, 10));
-    const seed = new Uint8Array(storedKey);
+    const fullKey = Uint8Array.from(atob(storedKey), c => c.charCodeAt(0));
+    const seed = fullKey.slice(0, 32);
 
     const provider = new Ed25519Provider(seed);
     const did = new DID({ provider, resolver: KeyResolver.getResolver() });
@@ -237,22 +240,19 @@ export default function RegisterPage() {
 
     try {
       const confirmationResult = confirmationResultRef.current;
-      if (!confirmationResult) {
-        throw new Error("OTP session expired. Please request a new OTP.");
+      if (!confirmationResult) throw new Error("No OTP request found");
+
+      const userCredential = await confirmationResult.confirm(otp);
+      const user = userCredential.user;
+
+      const did = await createDID();
+      if (did) {
+        localStorage.setItem("did", did);
+        alert(`Your DID: ${did}`);
+      } else {
+        setError("Failed to create DID.");
+        return;
       }
-
-      // Add better error handling
-      const result = await confirmationResult.confirm(otp);
-      if (!result?.user) {
-        throw new Error("Verification failed");
-      }
-
-      const user = result.user;
-      console.log("Successfully verified user:", user.phoneNumber);
-
-      // Rest of your success logic...
-      const did = createDID(phone);
-      localStorage.setItem("did", did);
 
       const [photoUrl, idProofUrl] = await Promise.all([
         uploadFile(photo!, `voters/${voterId}/photo.jpg`),
@@ -271,13 +271,14 @@ export default function RegisterPage() {
         photoUrl,
         idProofUrl,
         did,
+        uid: user.uid,
+        createdAt: new Date().toISOString()
       });
 
       router.push("/dashboard");
       
-    } catch (err: any) {
-      console.error("OTP verification error:", err);
-      setError(err.message || "Invalid OTP or verification failed.");
+    } catch {
+      setError("Invalid OTP or verification failed.");
     } finally {
       setVerifyingOtp(false);
     }
@@ -461,3 +462,4 @@ export default function RegisterPage() {
     </main>
   );
 }
+
