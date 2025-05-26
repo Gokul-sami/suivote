@@ -16,6 +16,7 @@ export type PartialZkLoginSignature = Omit<
 export default function LoginCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState("Processing login...");
+  const [mail, setMail] = useState("");
   
 
   useEffect(() => {
@@ -32,7 +33,10 @@ export default function LoginCallbackPage() {
         }
 
         // Decode the JWT
-        const decodedJwt = jwtDecode<JwtPayload>(idToken);
+        interface MyJwtPayload extends JwtPayload {
+          email?: string;
+        }
+        const decodedJwt = jwtDecode<MyJwtPayload>(idToken);
         console.log("JWT decoded:", decodedJwt);
 
         // Get ephemeral key and randomness
@@ -110,7 +114,15 @@ export default function LoginCallbackPage() {
         console.log("Partial ZK Login Signature:", partialZkLoginSignature);
 
         // Redirect to dashboard or home
-        router.push("/dashboard");
+        setMail(decodedJwt.email || "No email found");
+        console.log("User email:", decodedJwt.email);
+        if(mail =="hariharan.26csa@licet.ac.in" || mail=="gokulsami.26csa@licet.ac.in" || mail=="dineshkumar.26csa@licet.ac.in")
+        {
+          router.push("/admin");
+        }
+        else{
+          router.push("/dashboard");
+        }
       } catch (err) {
         console.error("Login processing error:", err);
         setStatus("Login failed.");
@@ -118,7 +130,7 @@ export default function LoginCallbackPage() {
     };
 
     processLogin();
-  }, [router]);
+  }, [mail, router]);
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-gray-100">
