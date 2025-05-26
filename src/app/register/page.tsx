@@ -248,7 +248,6 @@ export default function RegisterPage() {
       const did = await createDID();
       if (did) {
         localStorage.setItem("did", did);
-        alert(`Your DID: ${did}`);
       } else {
         setError("Failed to create DID.");
         return;
@@ -275,6 +274,7 @@ export default function RegisterPage() {
         createdAt: new Date().toISOString()
       });
 
+      alert(`Your DID: ${did}`);
       router.push("/dashboard");
       
     } catch {
