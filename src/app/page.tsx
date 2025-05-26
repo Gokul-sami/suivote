@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { SuiClient } from "@mysten/sui/client";
 import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
@@ -7,7 +7,7 @@ import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
 
 
 export default function HomePage() {
-  const router = useRouter();
+  // const router = useRouter();
 
   //   const handleReset = () => {
   //   // Your provided reset function
@@ -63,7 +63,7 @@ export default function HomePage() {
     <main className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
         <h1 className="text-3xl font-bold text-blue-600 mb-6">SuiVote</h1>
-        <p className="mb-6 text-gray-700">Welcome! Please choose an option:</p>
+        {/* <p className="mb-6 text-gray-700">Welcome! Please choose an option:</p> */}
 
         <div className="space-y-4">
           {/* <button
@@ -80,12 +80,12 @@ export default function HomePage() {
             Vote (Verify ZKP)
           </button> */}
 
-          <button
+          {/* <button
             onClick={() => router.push("/admin")}
             className="w-full bg-gray-800 text-white py-2 rounded-md hover:bg-gray-900 transition"
           >
             Admin Login
-          </button>
+          </button> */}
 
           <div className="border-t pt-4">
             <button
