@@ -8,6 +8,9 @@ import {
   RecaptchaVerifier,
   ConfirmationResult,
 } from "firebase/auth";
+import { Ed25519Provider } from 'key-did-provider-ed25519'
+import KeyResolver from 'key-did-resolver'
+import { DID } from 'dids'
 
 // Country data with name, dial code, and code
 const countries = [
