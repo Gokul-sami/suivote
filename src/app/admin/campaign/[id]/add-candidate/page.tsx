@@ -72,9 +72,9 @@ export default function AddCandidatePage() {
 
       alert('Candidate added successfully!');
       router.push(`/admin/campaign/${id}`);
-    } catch (error: any) {
+        } catch (error: unknown) {
       console.error('Error adding candidate:', error);
-      alert('Failed to add candidate: ' + error.message);
+      alert('Failed to add candidate: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export default function AddCandidatePage() {
             <label className="block text-gray-700 font-semibold mb-1">Father's Name</label>
             <input
               type="text"
-              placeholder="Father's Name"
+              placeholder="Father&#39;s Name"
               value={fatherName}
               onChange={e => setFatherName(e.target.value)}
               className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -128,7 +128,7 @@ export default function AddCandidatePage() {
             <label className="block text-gray-700 font-semibold mb-1">Mother's Name</label>
             <input
               type="text"
-              placeholder="Mother's Name"
+              placeholder="Mother&#39;s Name"
               value={motherName}
               onChange={e => setMotherName(e.target.value)}
               className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-400"
