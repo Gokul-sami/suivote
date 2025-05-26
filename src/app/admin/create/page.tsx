@@ -48,8 +48,12 @@ export default function CreateVotingSection() {
       // Save document with custom ID
       await setDoc(doc(db, 'campaigns', campaignId), votingDetails);
       router.push('/admin/dashboard');
-    } catch (error: any) {
-      alert('Failed to create voting section: ' + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert('Failed to create voting section: ' + error.message);
+      } else {
+        alert('Failed to create voting section: An unknown error occurred.');
+      }
     }
   };
 

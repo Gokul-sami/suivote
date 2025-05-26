@@ -45,9 +45,9 @@ export default function AdminVerify() {
       setConfirmationResult(result);
       setOtpSent(true);
       alert('OTP sent');
-    } catch (error) {
-      console.error(error);
-      alert('Failed to send OTP. Check your phone number and try again.');
+    } catch (error: unknown) {
+      console.error("Error during signInWithPhoneNumber:", error);
+      alert((error as Error).message || 'Failed to send OTP. Try again.');
     }
   };
 
