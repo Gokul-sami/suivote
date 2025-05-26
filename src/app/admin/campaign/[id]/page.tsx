@@ -4,8 +4,8 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
-// Candidate type
 interface Candidate {
   id: string;
   full_name: string;
@@ -27,7 +27,7 @@ interface Campaign {
   start: Date;
   end: Date;
   num_candidates?: number;
-  created_at?: unknown; // or Timestamp if imported from Firestore
+  created_at?: unknown; // or Timestamp if you import it from Firestore
   [key: string]: unknown;
 }
 
@@ -153,9 +153,11 @@ export default function CampaignDetails() {
             <ul className="space-y-4">
               {candidates.map(candidate => (
                 <li key={candidate.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
-                  <img
+                  <Image
                     src={candidate.photo_url || '/placeholder-avatar.png'}
                     alt={candidate.full_name}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 rounded-full object-cover border-2 border-indigo-400"
                   />
                   <span className="text-lg font-medium text-gray-800">{candidate.full_name}</span>

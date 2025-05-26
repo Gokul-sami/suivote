@@ -30,6 +30,7 @@ export default function AdminVerify() {
     }
   }, []);
 
+
   const sendOTP = async () => {
     if (zkp !== 'admin') {
       alert('Invalid Admin ZKP');
@@ -42,12 +43,13 @@ export default function AdminVerify() {
         "+91" + phone,
         window.recaptchaVerifier!
       );
+      console.log("OTP sent confirmation result:", result);
       setConfirmationResult(result);
       setOtpSent(true);
       alert('OTP sent');
-    } catch (error) {
-      console.error(error);
-      alert('Failed to send OTP. Check your phone number and try again.');
+    } catch (error: any) {
+      console.error("Error during signInWithPhoneNumber:", error);
+      alert(error.message || 'Failed to send OTP. Try again.');
     }
   };
 
