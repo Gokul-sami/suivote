@@ -162,13 +162,13 @@ export default function RegisterPage() {
   const createDID = async (): Promise<string | null> => {
     try {
     const storedKey = window.sessionStorage.getItem("ephemeralPrivateKey");
+    console.log("Stored Key:", storedKey);
     if (!storedKey) {
       throw new Error("Ephemeral private key not found in session storage.");
     }
 
-    // Convert "1,2,3,..." back to Uint8Array
-    const seedArray = storedKey.split(',').map((num) => parseInt(num, 10));
-    const seed = new Uint8Array(storedKey);
+    const fullKey = Uint8Array.from(atob(storedKey), c => c.charCodeAt(0));
+    const seed = fullKey.slice(0, 32);
 
     const provider = new Ed25519Provider(seed);
     const did = new DID({ provider, resolver: KeyResolver.getResolver() });
