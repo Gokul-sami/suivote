@@ -114,7 +114,7 @@ export default function AddCandidatePage() {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-semibold mb-1">Father's Name</label>
+            <label className="block text-gray-700 font-semibold mb-1">Father&#39;s Name</label>
             <input
               type="text"
               placeholder="Father&#39;s Name"
@@ -125,7 +125,7 @@ export default function AddCandidatePage() {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-semibold mb-1">Mother's Name</label>
+            <label className="block text-gray-700 font-semibold mb-1">Mother&#39;s Name</label>
             <input
               type="text"
               placeholder="Mother&#39;s Name"
