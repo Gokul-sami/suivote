@@ -35,13 +35,15 @@ export default function HomePage() {
       console.log("Ephemeral Private Key (Base64):", privateKeyBase64);
       const randomness = generateRandomness();
 
-      if(!window.sessionStorage.getItem("randomness") || !window.sessionStorage.getItem("ephemeralPrivateKey") || !window.localStorage.getItem("epoch")) {
-              window.sessionStorage.setItem("randomness", randomness);
-              window.sessionStorage.setItem("ephemeralPrivateKey", privateKeyBase64);
-              window.localStorage.setItem("epoch", maxEpoch.toString());
-      }
+      // if(!window.sessionStorage.getItem("randomness") || !window.sessionStorage.getItem("ephemeralPrivateKey") || !window.localStorage.getItem("epoch")) {
+      //         window.sessionStorage.setItem("randomness", randomness);
+      //         window.sessionStorage.setItem("ephemeralPrivateKey", privateKeyBase64);
+      //         window.localStorage.setItem("epoch", maxEpoch.toString());
+      // }
 
-
+      window.sessionStorage.setItem("randomness", randomness);
+      window.sessionStorage.setItem("ephemeralPrivateKey", privateKeyBase64);
+      window.localStorage.setItem("epoch", maxEpoch.toString());
 
       // 3. Create nonce using the ephemeral public key
       const nonce = generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness);
