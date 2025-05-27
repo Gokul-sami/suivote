@@ -232,7 +232,7 @@ export default function CampaignDetails() {
         {/* voter List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-indigo-700 mb-4 flex items-center justify-between">
-            <span>Voters</span>
+            <span>Total Voters</span>
             <span className="text-base font-semibold text-indigo-500">Total:{voters.length}</span>
           </h2>
           {voters.length === 0 ? (
