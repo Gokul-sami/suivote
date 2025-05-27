@@ -6,7 +6,7 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -66,6 +66,40 @@ export default function RegisterPage() {
         recaptchaVerifierRef.current = null;
       }
     };
+  }, []);
+
+  // Fetch campaigns on mount
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      setCampaignsLoading(true);
+      try {
+        const snapshot = await getDocs(collection(db, 'campaigns'));
+        const now = new Date()
+        ;
+        const list: any[] = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const start = data.start_date?.toDate?.() || new Date(data.start_date);
+          const end = data.end_date?.toDate?.() || new Date(data.end_date);
+          // Only push available campaigns (ongoing or scheduled)
+          if ((start <= now && end >= now) || start > now) {
+            list.push({
+              id: docSnap.id,
+              title: data.title,
+              description: data.description,
+              start,
+              end,
+            });
+          }
+        });
+        setCampaigns(list);
+      } catch (e) {
+        setError('Failed to load campaigns.');
+      } finally {
+        setCampaignsLoading(false);
+      }
+    };
+    fetchCampaigns();
   }, []);
 
   const validateStep1 = () => {
@@ -161,6 +195,29 @@ export default function RegisterPage() {
       localStorage.setItem("did", did);
       localStorage.setItem("campaign_id", selectedCampaign?.id || "");
 
+      // Add to registered candidates collection
+      if (selectedCampaign?.id) {
+        // Use fullName as the document ID (replace spaces with underscores, make uppercase for consistency)
+        const candidateDocId = fullName.trim().replace(/\s+/g, '_').toUpperCase();
+        await setDoc(
+          doc(db, 'campaigns', selectedCampaign.id, 'registered_candidates', candidateDocId),
+          {
+            full_name: fullName,
+            voter_id: voterId,
+            father_name: fatherName,
+            mother_name: motherName,
+            dob,
+            gender,
+            address,
+            photo_url: '', // You may want to upload and store the photo URL
+            id_proof_url: '', // You may want to upload and store the id proof URL
+            phone,
+            did,
+            registered_at: Timestamp.now(),
+          }
+        );
+      }
+
       alert(`Your DID: ${did}`);
       
       // Redirect to home after successful verification
@@ -170,35 +227,6 @@ export default function RegisterPage() {
       setError("Invalid OTP or verification failed.");
     } finally {
       setVerifyingOtp(false);
-    }
-  };
-
-  // Fetch campaigns (ongoing and scheduled)
-  const fetchCampaigns = async () => {
-    setCampaignsLoading(true);
-    try {
-      const snapshot = await getDocs(collection(db, 'campaigns'));
-      const now = new Date();
-      const list: any[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const start = data.start_date?.toDate?.() || new Date(data.start_date);
-        const end = data.end_date?.toDate?.() || new Date(data.end_date);
-        if ((start <= now && end >= now) || start > now) {
-          list.push({
-            id: docSnap.id,
-            title: data.title,
-            description: data.description,
-            start,
-            end,
-          });
-        }
-      });
-      setCampaigns(list);
-    } catch (e) {
-      setError('Failed to load campaigns.');
-    } finally {
-      setCampaignsLoading(false);
     }
   };
 
@@ -222,78 +250,34 @@ export default function RegisterPage() {
         {showCampaigns ? (
           <div className="mt-6">
             <h2 className="text-xl font-bold text-center mb-4 text-indigo-700">Select a Campaign to Register</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Ongoing Campaigns */}
-              <div className="bg-white rounded-lg shadow-lg p-4 border border-indigo-200">
-                <h3 className="text-lg font-semibold text-indigo-700 mb-2">Ongoing Campaigns</h3>
-                {campaignsLoading ? (
-                  <div className="text-center text-gray-500">Loading...</div>
-                ) : campaigns.filter(c => {
-                  const now = new Date();
-                  return c.start <= now && c.end >= now;
-                }).length === 0 ? (
-                  <div className="text-center text-gray-500">No ongoing campaigns.</div>
-                ) : (
-                  <ul className="space-y-3">
-                    {campaigns.filter(c => {
-                      const now = new Date();
-                      return c.start <= now && c.end >= now;
-                    }).map(campaign => (
-                      <li
-                        key={campaign.id}
-                        className="cursor-pointer bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg px-3 py-2 shadow hover:scale-105 hover:shadow-lg transition-all border border-indigo-200"
-                        onClick={() => {
-                          setShowCampaigns(false);
-                          setStep(1);
-                          setSelectedCampaign(campaign);
-                        }}
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-base font-semibold text-indigo-700">{campaign.title}</span>
-                          <span className="text-xs text-gray-700">{formatDate(campaign.start)} to {formatDate(campaign.end)}</span>
-                          <span className="text-xs text-gray-600 mt-1">{campaign.description}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {/* Scheduled Campaigns */}
-              <div className="bg-white rounded-lg shadow-lg p-4 border border-indigo-200">
-                <h3 className="text-lg font-semibold text-indigo-700 mb-2">Scheduled Campaigns</h3>
-                {campaignsLoading ? (
-                  <div className="text-center text-gray-500">Loading...</div>
-                ) : campaigns.filter(c => {
-                  const now = new Date();
-                  return c.start > now;
-                }).length === 0 ? (
-                  <div className="text-center text-gray-500">No scheduled campaigns.</div>
-                ) : (
-                  <ul className="space-y-3">
-                    {campaigns.filter(c => {
-                      const now = new Date();
-                      return c.start > now;
-                    }).map(campaign => (
-                      <li
-                        key={campaign.id}
-                        className="cursor-pointer bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg px-3 py-2 shadow hover:scale-105 hover:shadow-lg transition-all border border-indigo-200"
-                        onClick={() => {
-                          setShowCampaigns(false);
-                          setStep(1);
-                          setSelectedCampaign(campaign);
-                        }}
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-base font-semibold text-indigo-700">{campaign.title}</span>
-                          <span className="text-xs text-gray-700">{formatDate(campaign.start)} to {formatDate(campaign.end)}</span>
-                          <span className="text-xs text-gray-600 mt-1">{campaign.description}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+            {campaignsLoading ? (
+              <div className="text-center text-gray-500">Loading...</div>
+            ) : campaigns.length === 0 ? (
+              <div className="text-center text-gray-500">No campaigns found.</div>
+            ) : (
+              <ul className="space-y-3">
+                {campaigns.map(campaign => (
+                  <li
+                    key={campaign.id}
+                    className="cursor-pointer bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg px-3 py-2 shadow hover:scale-105 hover:shadow-lg transition-all border border-indigo-200"
+                    onClick={() => {
+                      setShowCampaigns(false);
+                      setStep(1);
+                      setSelectedCampaign(campaign);
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-base font-semibold text-indigo-700">{campaign.title}</span>
+                      <span className="text-xs text-gray-700">{formatDate(campaign.start)} to {formatDate(campaign.end)}</span>
+                      <span className="text-xs text-gray-600 mt-1">{campaign.description}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {selectedCampaign && (
+              <div className="text-green-700 text-sm mt-2 text-center">Selected: {selectedCampaign.title}</div>
+            )}
           </div>
         ) : step === 1 ? (
           <>
@@ -374,8 +358,17 @@ export default function RegisterPage() {
             {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
             <button
-              onClick={handleNext}
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+              onClick={() => {
+                if (!selectedCampaign) {
+                  setError('Please select a campaign to register.');
+                  return;
+                }
+                setError("");
+                if (validateStep1()) {
+                  setStep(2);
+                }
+              }}
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition mt-4"
             >
               Next: Phone Verification
             </button>
@@ -433,7 +426,8 @@ export default function RegisterPage() {
               ← Back to Campaign Selection
             </button>
           </>
-        )}
+        )
+        }
       </div>
     </main>
   );

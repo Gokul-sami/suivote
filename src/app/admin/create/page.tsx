@@ -56,7 +56,7 @@ export default function CreateVotingSection() {
       }
     }
   };
-
+  
   return (
     <div className="min-h-screen w-full bg-gradient-to-r from-indigo-500 to-purple-600 flex flex-col items-center justify-center px-6 py-12 space-y-8">
       <div className="flex flex-col flex-1 items-center justify-center w-full px-4 py-8">
