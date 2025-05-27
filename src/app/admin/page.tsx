@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Ed25519Provider } from 'key-did-provider-ed25519'
+import KeyResolver from 'key-did-resolver'
+import { DID } from 'dids';
 
 
 declare global {
@@ -52,6 +55,29 @@ export default function AdminVerify() {
     }
   };
 
+  const createDID = async (): Promise<string | null> => {
+      try {
+      const storedKey = window.sessionStorage.getItem("ephemeralPrivateKey");
+      console.log("Stored Key:", storedKey);
+      if (!storedKey) {
+        throw new Error("Ephemeral private key not found in session storage.");
+      }
+  
+      const fullKey = Uint8Array.from(atob(storedKey), c => c.charCodeAt(0));
+      const seed = fullKey.slice(0, 32);
+  
+      const provider = new Ed25519Provider(seed);
+      const did = new DID({ provider, resolver: KeyResolver.getResolver() });
+      await did.authenticate();
+  
+      console.log("✅ DID created:", did.id);
+      return did.id;
+    } catch (error) {
+      console.error("❌ Failed to create DID:", error);
+      return null;
+    }
+  
+  };
   const verifyOTP = async () => {
     if (!confirmationResult) {
       alert('OTP confirmation is not available. Please request a new OTP.');
@@ -59,6 +85,14 @@ export default function AdminVerify() {
     }
     try {
       await confirmationResult.confirm(otp);
+      const did = await createDID();
+      if (!did) {
+        alert('Failed to create DID. Please try again.');
+        return;
+      } 
+      console.log("DID:", did);
+      alert(`Your DID: ${did}`);
+      window.sessionStorage.setItem("did", did);
       router.push('/admin/dashboard');
     } catch (error) {
       console.error(error);
