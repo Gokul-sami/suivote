@@ -5,7 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-// interface Candidate {
+// interface voter {
 //   id: string;
 //   full_name: string;
 //   voter_id: string;
@@ -26,7 +26,7 @@ interface Campaign {
   description: string;
   start: Date;
   end: Date;
-  num_candidates?: number;
+  num_voters?: number;
   [key: string]: unknown;
 }
 
