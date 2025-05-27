@@ -7,6 +7,7 @@ import {
   signInWithPhoneNumber,
 } from "firebase/auth";
 import { collection, doc, getDocs, setDoc, Timestamp } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -197,10 +198,35 @@ export default function RegisterPage() {
 
       // Add to registered candidates collection
       if (selectedCampaign?.id) {
-        // Use fullName as the document ID (replace spaces with underscores, make uppercase for consistency)
-        const candidateDocId = fullName.trim().replace(/\s+/g, '_').toUpperCase();
+        // Use fullName as the document ID (replace spaces with hyphens, lowercase, remove special chars)
+        const candidateId = fullName
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+
+        // Upload photo and id proof to storage and get URLs
+        let photoUrl = '';
+        let idProofUrl = '';
+        // Import storage only once
+        const { getStorage } = await import('firebase/storage');
+        const storage = getStorage();
+        const safeName = fullName.trim().toLowerCase().replace(/\s+/g, '_');
+        if (photo) {
+          const photoRef = `registered_candidates/${selectedCampaign.id}/photos/${safeName}.jpg`;
+          const photoUrlRef = ref(storage, photoRef);
+          await uploadBytes(photoUrlRef, photo);
+          photoUrl = await getDownloadURL(photoUrlRef);
+        }
+        if (idProof) {
+          const idProofRef = `registered_candidates/${selectedCampaign.id}/id_proof/${safeName}.jpg`;
+          const idProofUrlRef = ref(storage, idProofRef);
+          await uploadBytes(idProofUrlRef, idProof);
+          idProofUrl = await getDownloadURL(idProofUrlRef);
+        }
+
         await setDoc(
-          doc(db, 'campaigns', selectedCampaign.id, 'registered_candidates', candidateDocId),
+          doc(db, 'campaigns', selectedCampaign.id, 'registered_candidates', candidateId),
           {
             full_name: fullName,
             voter_id: voterId,
@@ -209,8 +235,8 @@ export default function RegisterPage() {
             dob,
             gender,
             address,
-            photo_url: '', // You may want to upload and store the photo URL
-            id_proof_url: '', // You may want to upload and store the id proof URL
+            photo_url: photoUrl,
+            id_proof_url: idProofUrl,
             phone,
             did,
             registered_at: Timestamp.now(),
