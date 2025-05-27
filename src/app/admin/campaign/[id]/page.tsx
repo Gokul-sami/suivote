@@ -345,7 +345,7 @@ export default function CampaignDetails() {
                 className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
                 onClick={() => handleVerifyvoter(modalvoter)}
               >
-                voter is Verified
+                Voter is Verified
               </button>
             </div>
           )}
