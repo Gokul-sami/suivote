@@ -232,7 +232,7 @@ export default function CampaignDetails() {
         {/* voter List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-indigo-700 mb-4 flex items-center justify-between">
-            <span>voters</span>
+            <span>Voters</span>
             <span className="text-base font-semibold text-indigo-500">Total:{voters.length}</span>
           </h2>
           {voters.length === 0 ? (
@@ -257,7 +257,7 @@ export default function CampaignDetails() {
         {/* Registered voters List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-green-700 mb-4 flex items-center justify-between">
-            <span>Registered voters</span>
+            <span>Registered Voters</span>
             <span className="text-base font-semibold text-green-600">Total:{registeredvoters.length}</span>
           </h2>
           {registeredvoters.length === 0 ? (
@@ -297,7 +297,7 @@ export default function CampaignDetails() {
         {/* Verified voters List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-blue-700 mb-4 flex items-center justify-between">
-            <span>Verified voters</span>
+            <span>Verified Voters</span>
             <span className="text-base font-semibold text-blue-600">Total:{verifiedvoters.length}</span>
           </h2>
           {verifiedvoters.length === 0 ? (
