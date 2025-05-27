@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
+
 declare global {
   interface Window {
     recaptchaVerifier: RecaptchaVerifier;

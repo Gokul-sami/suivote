@@ -5,6 +5,8 @@ import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { createVerifiableCredentialJwt } from 'did-jwt-vc';
+import { EdDSASigner } from 'did-jwt';
 
 // Custom Modal component (no external dependency)
 function SimpleModal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) {
