@@ -88,7 +88,7 @@ export default function AddvoterPage() {
         style={{ boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)' }}
       >
         <h2 className="text-3xl font-extrabold text-center text-indigo-700 mb-6 tracking-tight">
-          Add voter
+          Add Voter
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
