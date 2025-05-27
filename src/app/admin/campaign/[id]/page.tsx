@@ -19,7 +19,7 @@ function SimpleModal({ isOpen, onClose, children }: { isOpen: boolean, onClose: 
   );
 }
 
-interface _Candidate {
+interface _voter {
   id: string;
   full_name: string;
   voter_id: string;
@@ -39,7 +39,7 @@ interface Campaign {
   description: string;
   start: Date;
   end: Date;
-  num_candidates?: number;
+  num_voters?: number;
 }
 
 export default function CampaignDetails() {
@@ -48,12 +48,12 @@ export default function CampaignDetails() {
   const { id } = params as { id: string };
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [candidates, setCandidates] = useState<_Candidate[]>([]);
-  const [registeredCandidates, setRegisteredCandidates] = useState<_Candidate[]>([]);
+  const [voters, setvoters] = useState<_voter[]>([]);
+  const [registeredvoters, setRegisteredvoters] = useState<_voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalCandidate, setModalCandidate] = useState<_Candidate | null>(null);
-  const [verifiedCandidates, setVerifiedCandidates] = useState<_Candidate[]>([]);
+  const [modalvoter, setModalvoter] = useState<_voter | null>(null);
+  const [verifiedvoters, setVerifiedvoters] = useState<_voter[]>([]);
 
   useEffect(() => {
     async function fetchCampaign() {
@@ -70,7 +70,7 @@ export default function CampaignDetails() {
             description: data.description ?? '',
             start: data.start_date?.toDate?.() ?? new Date(data.start_date),
             end: data.end_date?.toDate?.() ?? new Date(data.end_date),
-            num_candidates: data.num_candidates ?? 0,
+            num_voters: data.num_voters ?? 0,
           });
         } else {
           setCampaign(null);
@@ -82,11 +82,11 @@ export default function CampaignDetails() {
       }
     }
 
-    async function fetchCandidates() {
+    async function fetchvoters() {
       try {
-        const candidatesCol = collection(db, 'campaigns', id, 'candidates');
-        const candidatesSnap = await getDocs(candidatesCol);
-        const candidatesList = candidatesSnap.docs.map(doc => {
+        const votersCol = collection(db, 'campaigns', id, 'voters');
+        const votersSnap = await getDocs(votersCol);
+        const votersList = votersSnap.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -102,15 +102,15 @@ export default function CampaignDetails() {
             created_at: data.created_at ?? null,
           };
         });
-        setCandidates(candidatesList);
+        setvoters(votersList);
       } catch (error) {
-        console.error("Error fetching candidates:", error);
+        console.error("Error fetching voters:", error);
       }
     }
 
-    async function fetchRegisteredCandidates() {
+    async function fetchRegisteredvoters() {
       try {
-        const regCol = collection(db, 'campaigns', id, 'registered_candidates');
+        const regCol = collection(db, 'campaigns', id, 'registered_voters');
         const regSnap = await getDocs(regCol);
         const regList = regSnap.docs.map(doc => {
           const data = doc.data();
@@ -128,15 +128,15 @@ export default function CampaignDetails() {
             created_at: data.created_at ?? null,
           };
         });
-        setRegisteredCandidates(regList);
+        setRegisteredvoters(regList);
       } catch (error) {
-        console.error('Error fetching registered candidates:', error);
+        console.error('Error fetching registered voters:', error);
       }
     }
 
-    async function fetchVerifiedCandidates() {
+    async function fetchVerifiedvoters() {
       try {
-        const verCol = collection(db, 'campaigns', id, 'verified_candidates');
+        const verCol = collection(db, 'campaigns', id, 'verified_voters');
         const verSnap = await getDocs(verCol);
         const verList = verSnap.docs.map(doc => {
           const data = doc.data();
@@ -154,28 +154,28 @@ export default function CampaignDetails() {
             created_at: data.created_at ?? null,
           };
         });
-        setVerifiedCandidates(verList);
+        setVerifiedvoters(verList);
       } catch (error) {
-        console.error('Error fetching verified candidates:', error);
+        console.error('Error fetching verified voters:', error);
       }
     }
 
     fetchCampaign();
-    fetchCandidates();
-    fetchRegisteredCandidates();
-    fetchVerifiedCandidates();
+    fetchvoters();
+    fetchRegisteredvoters();
+    fetchVerifiedvoters();
   }, [id]);
 
-  async function handleVerifyCandidate(candidate: _Candidate) {
+  async function handleVerifyvoter(voter: _voter) {
     try {
       await setDoc(
-        doc(db, 'campaigns', id, 'verified_candidates', candidate.id),
-        candidate
+        doc(db, 'campaigns', id, 'verified_voters', voter.id),
+        voter
       );
-      setVerifiedCandidates(prev => [...prev, candidate]);
+      setVerifiedvoters(prev => [...prev, voter]);
       setModalOpen(false);
     } catch (error) {
-      alert('Failed to verify candidate.');
+      alert('Failed to verify voter.');
     }
   }
 
@@ -217,73 +217,73 @@ export default function CampaignDetails() {
           </span>
         </div>
         <div className="text-gray-700">
-          <span className="font-semibold">Number of Candidates:</span> {campaign.num_candidates}
+          <span className="font-semibold">Number of voters:</span> {campaign.num_voters}
         </div>
         <button
           className="w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 mt-4"
-          onClick={() => router.push(`/admin/campaign/${id}/add-candidate`)}
+          onClick={() => router.push(`/admin/campaign/${id}/add-voter`)}
         >
-          Add Candidate
+          Add voter
         </button>
 
-        {/* Candidate List */}
+        {/* voter List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-indigo-700 mb-4 flex items-center justify-between">
-            <span>Candidates</span>
-            <span className="text-base font-semibold text-indigo-500">Total:{candidates.length}</span>
+            <span>voters</span>
+            <span className="text-base font-semibold text-indigo-500">Total:{voters.length}</span>
           </h2>
-          {candidates.length === 0 ? (
-            <div className="text-gray-500">No candidates yet.</div>
+          {voters.length === 0 ? (
+            <div className="text-gray-500">No voters yet.</div>
           ) : (
             <ul className="space-y-4">
-              {candidates.map(candidate => (
-                <li key={candidate.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
+              {voters.map(voter => (
+                <li key={voter.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
                   <Image
-                    src={candidate.photo_url || '/placeholder-avatar.png'}
-                    alt={candidate.full_name}
+                    src={voter.photo_url || '/placeholder-avatar.png'}
+                    alt={voter.full_name}
                     width={64}
                     height={64}
                     className="w-16 h-16 rounded-full object-cover border-2 border-indigo-400"
                   />
-                  <span className="text-lg font-medium text-gray-800">{candidate.full_name}</span>
+                  <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        {/* Registered Candidates List */}
+        {/* Registered voters List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-green-700 mb-4 flex items-center justify-between">
-            <span>Registered Candidates</span>
-            <span className="text-base font-semibold text-green-600">Total:{registeredCandidates.length}</span>
+            <span>Registered voters</span>
+            <span className="text-base font-semibold text-green-600">Total:{registeredvoters.length}</span>
           </h2>
-          {registeredCandidates.length === 0 ? (
-            <div className="text-gray-500">No registered candidates yet.</div>
+          {registeredvoters.length === 0 ? (
+            <div className="text-gray-500">No registered voters yet.</div>
           ) : (
             <ul className="space-y-4">
-              {registeredCandidates.map(candidate => {
-                const isVerified = verifiedCandidates.some(vc => vc.id === candidate.id);
+              {registeredvoters.map(voter => {
+                const isVerified = verifiedvoters.some(vc => vc.id === voter.id);
                 return (
                   <li
-                    key={candidate.id}
+                    key={voter.id}
                     className={`flex items-center space-x-4 bg-green-50 rounded-lg p-4 ${isVerified ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}
                     onClick={() => {
                       if (!isVerified) {
-                        setModalCandidate(candidate);
+                        setModalvoter(voter);
                         setModalOpen(true);
                       }
                     }}
                   >
                     <Image
-                      src={candidate.photo_url || '/placeholder-avatar.png'}
-                      alt={candidate.full_name}
+                      src={voter.photo_url || '/placeholder-avatar.png'}
+                      alt={voter.full_name}
                       width={64}
                       height={64}
                       className="w-16 h-16 rounded-full object-cover border-2 border-green-400"
                     />
-                    <span className="text-lg font-medium text-gray-800">{candidate.full_name}</span>
+                    <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
                     {isVerified && (
-                      <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Candidate is Verified</span>
+                      <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">voter is Verified</span>
                     )}
                   </li>
                 );
@@ -291,58 +291,58 @@ export default function CampaignDetails() {
             </ul>
           )}
         </div>
-        {/* Verified Candidates List */}
+        {/* Verified voters List */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-blue-700 mb-4 flex items-center justify-between">
-            <span>Verified Candidates</span>
-            <span className="text-base font-semibold text-blue-600">Total:{verifiedCandidates.length}</span>
+            <span>Verified voters</span>
+            <span className="text-base font-semibold text-blue-600">Total:{verifiedvoters.length}</span>
           </h2>
-          {verifiedCandidates.length === 0 ? (
-            <div className="text-gray-500">No verified candidates yet.</div>
+          {verifiedvoters.length === 0 ? (
+            <div className="text-gray-500">No verified voters yet.</div>
           ) : (
             <ul className="space-y-4">
-              {verifiedCandidates.map(candidate => (
-                <li key={candidate.id} className="flex items-center space-x-4 bg-blue-50 rounded-lg p-4">
+              {verifiedvoters.map(voter => (
+                <li key={voter.id} className="flex items-center space-x-4 bg-blue-50 rounded-lg p-4">
                   <Image
-                    src={candidate.photo_url || '/placeholder-avatar.png'}
-                    alt={candidate.full_name}
+                    src={voter.photo_url || '/placeholder-avatar.png'}
+                    alt={voter.full_name}
                     width={64}
                     height={64}
                     className="w-16 h-16 rounded-full object-cover border-2 border-blue-400"
                   />
-                  <span className="text-lg font-medium text-gray-800">{candidate.full_name}</span>
+                  <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        {/* Candidate Modal */}
+        {/* voter Modal */}
         <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-          {modalCandidate && (
+          {modalvoter && (
             <div className="flex flex-col items-center">
               <Image
-                src={modalCandidate.photo_url || '/placeholder-avatar.png'}
-                alt={modalCandidate.full_name}
+                src={modalvoter.photo_url || '/placeholder-avatar.png'}
+                alt={modalvoter.full_name}
                 width={120}
                 height={120}
                 className="w-28 h-28 rounded-full object-cover border-2 border-indigo-400 mb-4"
               />
-              <h3 className="text-2xl font-bold mb-2">{modalCandidate.full_name}</h3>
-              <p className="mb-1"><b>Voter ID:</b> {modalCandidate.voter_id}</p>
-              <p className="mb-1"><b>Father's Name:</b> {modalCandidate.father_name}</p>
-              <p className="mb-1"><b>Mother's Name:</b> {modalCandidate.mother_name}</p>
-              <p className="mb-1"><b>DOB:</b> {modalCandidate.dob}</p>
-              <p className="mb-1"><b>Gender:</b> {modalCandidate.gender}</p>
-              <p className="mb-1"><b>Address:</b> {modalCandidate.address}</p>
+              <h3 className="text-2xl font-bold mb-2">{modalvoter.full_name}</h3>
+              <p className="mb-1"><b>Voter ID:</b> {modalvoter.voter_id}</p>
+              <p className="mb-1"><b>Father's Name:</b> {modalvoter.father_name}</p>
+              <p className="mb-1"><b>Mother's Name:</b> {modalvoter.mother_name}</p>
+              <p className="mb-1"><b>DOB:</b> {modalvoter.dob}</p>
+              <p className="mb-1"><b>Gender:</b> {modalvoter.gender}</p>
+              <p className="mb-1"><b>Address:</b> {modalvoter.address}</p>
               <div className="flex gap-4 mt-4">
-                <a href={modalCandidate.photo_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Photo</a>
-                <a href={modalCandidate.id_proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View ID Proof</a>
+                <a href={modalvoter.photo_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Photo</a>
+                <a href={modalvoter.id_proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View ID Proof</a>
               </div>
               <button
                 className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-                onClick={() => handleVerifyCandidate(modalCandidate)}
+                onClick={() => handleVerifyvoter(modalvoter)}
               >
-                Candidate is Verified
+                voter is Verified
               </button>
             </div>
           )}

@@ -196,10 +196,10 @@ export default function RegisterPage() {
       localStorage.setItem("did", did);
       localStorage.setItem("campaign_id", selectedCampaign?.id || "");
 
-      // Add to registered candidates collection
+      // Add to registered voters collection
       if (selectedCampaign?.id) {
         // Use fullName as the document ID (replace spaces with hyphens, lowercase, remove special chars)
-        const candidateId = fullName
+        const voterId = fullName
           .trim()
           .toLowerCase()
           .replace(/\s+/g, '-')
@@ -213,20 +213,20 @@ export default function RegisterPage() {
         const storage = getStorage();
         const safeName = fullName.trim().toLowerCase().replace(/\s+/g, '_');
         if (photo) {
-          const photoRef = `registered_candidates/${selectedCampaign.id}/photos/${safeName}.jpg`;
+          const photoRef = `registered_voters/${selectedCampaign.id}/photos/${safeName}.jpg`;
           const photoUrlRef = ref(storage, photoRef);
           await uploadBytes(photoUrlRef, photo);
           photoUrl = await getDownloadURL(photoUrlRef);
         }
         if (idProof) {
-          const idProofRef = `registered_candidates/${selectedCampaign.id}/id_proof/${safeName}.jpg`;
+          const idProofRef = `registered_voters/${selectedCampaign.id}/id_proof/${safeName}.jpg`;
           const idProofUrlRef = ref(storage, idProofRef);
           await uploadBytes(idProofUrlRef, idProof);
           idProofUrl = await getDownloadURL(idProofUrlRef);
         }
 
         await setDoc(
-          doc(db, 'campaigns', selectedCampaign.id, 'registered_candidates', candidateId),
+          doc(db, 'campaigns', selectedCampaign.id, 'registered_voters', voterId),
           {
             full_name: fullName,
             voter_id: voterId,

@@ -10,7 +10,7 @@ export default function CreateVotingSection() {
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [numCandidates, setNumCandidates] = useState(2);
+  const [numvoters, setNumvoters] = useState(2);
   const router = useRouter();
 
   const handleCreate = async () => {
@@ -41,7 +41,7 @@ export default function CreateVotingSection() {
         description,
         start_date: Timestamp.fromDate(start),
         end_date: Timestamp.fromDate(end),
-        num_candidates: numCandidates,
+        num_voters: numvoters,
         created_at: Timestamp.now(),
       };
 
@@ -117,19 +117,19 @@ export default function CreateVotingSection() {
               />
             </div>
           </div>
-          {/* Number of Candidates */}
+          {/* Number of voters */}
           <div>
-            <label className="block mb-1 text-gray-700 font-bold" htmlFor="num-candidates">
-              Number of Candidates
+            <label className="block mb-1 text-gray-700 font-bold" htmlFor="num-voters">
+              Number of voters
             </label>
             <input
-              id="num-candidates"
+              id="num-voters"
               type="number"
               min={2}
-              value={numCandidates}
-              onChange={(e) => setNumCandidates(Number(e.target.value))}
+              value={numvoters}
+              onChange={(e) => setNumvoters(Number(e.target.value))}
               className="border border-gray-300 p-3 rounded-lg w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
-              placeholder="Number of Candidates"
+              placeholder="Number of voters"
             />
           </div>
           {/* Centered Button */}

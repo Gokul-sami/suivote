@@ -6,7 +6,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function AddCandidatePage() {
+export default function AddvoterPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params as { id: string };
@@ -33,8 +33,8 @@ export default function AddCandidatePage() {
     setLoading(true);
     try {
       const safeName = fullName.trim().toLowerCase().replace(/\s+/g, '_');
-      const photoRef = ref(storage, `candidates/${id}/photos/${safeName}.jpg`);
-      const idProofRef = ref(storage, `candidates/${id}/idproofs/${safeName}_id.jpg`);
+      const photoRef = ref(storage, `voters/${id}/photos/${safeName}.jpg`);
+      const idProofRef = ref(storage, `voters/${id}/idproofs/${safeName}_id.jpg`);
 
       // Upload files
       const photoSnap = await uploadBytes(photoRef, photo);
@@ -45,13 +45,13 @@ export default function AddCandidatePage() {
       const idProofURL = await getDownloadURL(idProofSnap.ref);
 
       // Prepare data
-      const candidateId = fullName
+      const voterId = fullName
         .trim()
         .toLowerCase()
         .replace(/\s+/g, '-') // Replace spaces with hyphens
         .replace(/[^a-z0-9-]/g, ''); // Remove special characters
 
-      const candidateData = {
+      const voterData = {
         full_name: fullName,
         voter_id: voterId,
         father_name: fatherName,
@@ -64,17 +64,17 @@ export default function AddCandidatePage() {
         created_at: Timestamp.now(),
       };
 
-      // Add to Firestore with candidate name as document ID
+      // Add to Firestore with voter name as document ID
       await setDoc(
-        doc(db, 'campaigns', id, 'candidates', candidateId),
-        candidateData
+        doc(db, 'campaigns', id, 'voters', voterId),
+        voterData
       );
 
-      alert('Candidate added successfully!');
+      alert('voter added successfully!');
       router.push(`/admin/campaign/${id}`);
         } catch (error: unknown) {
-      console.error('Error adding candidate:', error);
-      alert('Failed to add candidate: ' + (error instanceof Error ? error.message : String(error)));
+      console.error('Error adding voter:', error);
+      alert('Failed to add voter: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function AddCandidatePage() {
         style={{ boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)' }}
       >
         <h2 className="text-3xl font-extrabold text-center text-indigo-700 mb-6 tracking-tight">
-          Add Candidate
+          Add voter
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -204,7 +204,7 @@ export default function AddCandidatePage() {
             className="px-6 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition shadow-lg"
             disabled={loading}
           >
-            {loading ? 'Adding...' : 'Add Candidate'}
+            {loading ? 'Adding...' : 'Add voter'}
           </button>
         </div>
       </form>
