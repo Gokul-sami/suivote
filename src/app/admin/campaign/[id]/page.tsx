@@ -4,7 +4,7 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createVerifiableCredentialJwt } from 'did-jwt-vc';
 import { EdDSASigner } from 'did-jwt';
 
@@ -56,6 +56,14 @@ export default function CampaignDetails() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalvoter, setModalvoter] = useState<_voter | null>(null);
   const [verifiedvoters, setVerifiedvoters] = useState<_voter[]>([]);
+
+  // Section refs for navigation
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const votersRef = useRef<HTMLDivElement>(null);
+  const registeredRef = useRef<HTMLDivElement>(null);
+  const verifiedRef = useRef<HTMLDivElement>(null);
+
+  const [activeSection, setActiveSection] = useState<'details' | 'voters' | 'registered' | 'verified'>('details');
 
   useEffect(() => {
     async function fetchCampaign() {
@@ -192,7 +200,7 @@ export default function CampaignDetails() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+      <div className="flex items-center justify-center h-screen bg-white text-indigo-700">
         <div className="text-2xl">Loading...</div>
       </div>
     );
@@ -200,156 +208,217 @@ export default function CampaignDetails() {
 
   if (!campaign) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+      <div className="flex items-center justify-center h-screen bg-white text-indigo-700">
         <div className="text-2xl">Campaign not found.</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-12">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-10 space-y-6">
-        <h1 className="text-3xl font-bold text-indigo-700">{campaign.title}</h1>
-        <p className="text-gray-700">{campaign.description}</p>
-        <div className="flex justify-between text-gray-600">
-          <span>
-            <span className="font-semibold">Start:</span> {formatDate(campaign.start)}
-          </span>
-          <span>
-            <span className="font-semibold">End:</span> {formatDate(campaign.end)}
-          </span>
+    <div className="min-h-screen bg-white flex flex-col items-center px-0 py-0">
+      {/* Absolute top left app name */}
+      <div className="fixed top-0 left-0 z-30 px-6 py-4">
+        <span className="font-extrabold text-2xl text-indigo-700 select-none">Suivote</span>
+      </div>
+      {/* Full-width Top Navigation Bar */}
+      <nav className="w-full border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="max-w-2xl mx-auto flex items-center">
+          {/* Tabs (no app name here, only navigation) */}
+          <div className="flex flex-1 w-full">
+            <button
+              className={`flex-1 py-4 px-2 text-center font-semibold transition border-b-2
+                ${activeSection === 'details'
+                  ? 'text-indigo-700 border-indigo-700'
+                  : 'text-gray-500 border-transparent hover:text-indigo-700'}
+              `}
+              onClick={() => setActiveSection('details')}
+            >
+              Campaign Details
+            </button>
+            <button
+              className={`flex-1 py-4 px-2 text-center font-semibold transition border-b-2
+                ${activeSection === 'voters'
+                  ? 'text-indigo-700 border-indigo-700'
+                  : 'text-gray-500 border-transparent hover:text-indigo-700'}
+              `}
+              onClick={() => setActiveSection('voters')}
+            >
+              Voters
+            </button>
+            <button
+              className={`flex-1 py-4 px-2 text-center font-semibold transition border-b-2
+                ${activeSection === 'registered'
+                  ? 'text-green-700 border-green-700'
+                  : 'text-gray-500 border-transparent hover:text-green-700'}
+              `}
+              onClick={() => setActiveSection('registered')}
+            >
+              Registered Voters
+            </button>
+            <button
+              className={`flex-1 py-4 px-2 text-center font-semibold transition border-b-2
+                ${activeSection === 'verified'
+                  ? 'text-blue-700 border-blue-700'
+                  : 'text-gray-500 border-transparent hover:text-blue-700'}
+              `}
+              onClick={() => setActiveSection('verified')}
+            >
+              Verified Voters
+            </button>
+          </div>
         </div>
-        <div className="text-gray-700">
-          <span className="font-semibold">Number of Voters:</span> {campaign.num_voters}
-        </div>
-        <button
-          className="w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 mt-4"
-          onClick={() => router.push(`/admin/campaign/${id}/add-voter`)}
-        >
-          Add Voter
-        </button>
-
-        {/* voter List */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold text-indigo-700 mb-4 flex items-center justify-between">
-            <span>Total Voters</span>
-            <span className="text-base font-semibold text-indigo-500">Total:{voters.length}</span>
-          </h2>
-          {voters.length === 0 ? (
-            <div className="text-gray-500">No voters yet.</div>
-          ) : (
-            <ul className="space-y-4">
-              {voters.map(voter => (
-                <li key={voter.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
-                  <Image
-                    src={voter.photo_url || '/placeholder-avatar.png'}
-                    alt={voter.full_name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-indigo-400"
-                  />
-                  <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        {/* Registered voters List */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold text-green-700 mb-4 flex items-center justify-between">
-            <span>Registered Voters</span>
-            <span className="text-base font-semibold text-green-600">Total:{registeredvoters.length}</span>
-          </h2>
-          {registeredvoters.length === 0 ? (
-            <div className="text-gray-500">No registered voters yet.</div>
-          ) : (
-            <ul className="space-y-4">
-              {registeredvoters.map(voter => {
-                const isVerified = verifiedvoters.some(vc => vc.id === voter.id);
-                return (
-                  <li
-                    key={voter.id}
-                    className={`flex items-center space-x-4 bg-green-50 rounded-lg p-4 ${isVerified ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}
-                    onClick={() => {
-                      if (!isVerified) {
-                        setModalvoter(voter);
-                        setModalOpen(true);
-                      }
-                    }}
-                  >
-                    <Image
-                      src={voter.photo_url || '/placeholder-avatar.png'}
-                      alt={voter.full_name}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-green-400"
-                    />
-                    <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
-                    {isVerified && (
-                      <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Voter is Verified</span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-        {/* Verified voters List */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold text-blue-700 mb-4 flex items-center justify-between">
-            <span>Verified Voters</span>
-            <span className="text-base font-semibold text-blue-600">Total:{verifiedvoters.length}</span>
-          </h2>
-          {verifiedvoters.length === 0 ? (
-            <div className="text-gray-500">No verified voters yet.</div>
-          ) : (
-            <ul className="space-y-4">
-              {verifiedvoters.map(voter => (
-                <li key={voter.id} className="flex items-center space-x-4 bg-blue-50 rounded-lg p-4">
-                  <Image
-                    src={voter.photo_url || '/placeholder-avatar.png'}
-                    alt={voter.full_name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-blue-400"
-                  />
-                  <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        {/* voter Modal */}
-        <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-          {modalvoter && (
-            <div className="flex flex-col items-center">
-              <Image
-                src={modalvoter.photo_url || '/placeholder-avatar.png'}
-                alt={modalvoter.full_name}
-                width={120}
-                height={120}
-                className="w-28 h-28 rounded-full object-cover border-2 border-indigo-400 mb-4"
-              />
-              <h3 className="text-2xl font-bold mb-2">{modalvoter.full_name}</h3>
-              <p className="mb-1"><b>Voter ID:</b> {modalvoter.voter_id}</p>
-              <p className="mb-1"><b>Father's Name:</b> {modalvoter.father_name}</p>
-              <p className="mb-1"><b>Mother's Name:</b> {modalvoter.mother_name}</p>
-              <p className="mb-1"><b>DOB:</b> {modalvoter.dob}</p>
-              <p className="mb-1"><b>Gender:</b> {modalvoter.gender}</p>
-              <p className="mb-1"><b>Address:</b> {modalvoter.address}</p>
-              <div className="flex gap-4 mt-4">
-                <a href={modalvoter.photo_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Photo</a>
-                <a href={modalvoter.id_proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View ID Proof</a>
+      </nav>
+      <div className="flex flex-col items-center w-full">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 md:p-12 mt-8 space-y-12">
+          {/* Only show the selected section */}
+          {activeSection === 'details' && (
+            <section ref={detailsRef} className="pb-8 border-b border-gray-200">
+              <h1 className="text-4xl font-extrabold text-indigo-700 mb-2">{campaign.title}</h1>
+              <p className="text-gray-700 mb-4">{campaign.description}</p>
+              <div className="flex flex-wrap gap-6 text-gray-600 mb-2">
+                <span>
+                  <span className="font-semibold">Start:</span> {formatDate(campaign.start)}
+                </span>
+                <span>
+                  <span className="font-semibold">End:</span> {formatDate(campaign.end)}
+                </span>
+                <span>
+                  <span className="font-semibold">Number of Voters:</span> {campaign.num_voters}
+                </span>
               </div>
               <button
-                className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-                onClick={() => handleVerifyvoter(modalvoter)}
+                className="mt-4 w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                onClick={() => router.push(`/admin/campaign/${id}/add-voter`)}
               >
-                Voter is Verified
+                Add Voter
               </button>
-            </div>
+            </section>
           )}
-        </SimpleModal>
+          {activeSection === 'voters' && (
+            <section ref={votersRef} className="pb-8 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-indigo-700 mb-4 flex items-center justify-between">
+                <span>Voters</span>
+                <span className="text-base font-semibold text-indigo-500">Total: {voters.length}</span>
+              </h2>
+              {voters.length === 0 ? (
+                <div className="text-gray-500">No voters yet.</div>
+              ) : (
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {voters.map(voter => (
+                    <li key={voter.id} className="flex items-center space-x-4 bg-gray-100 rounded-lg p-4">
+                      <Image
+                        src={voter.photo_url || '/placeholder-avatar.png'}
+                        alt={voter.full_name}
+                        width={56}
+                        height={56}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-indigo-400"
+                      />
+                      <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+          {activeSection === 'registered' && (
+            <section ref={registeredRef} className="pb-8 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-green-700 mb-4 flex items-center justify-between">
+                <span>Registered Voters</span>
+                <span className="text-base font-semibold text-green-600">Total: {registeredvoters.length}</span>
+              </h2>
+              {registeredvoters.length === 0 ? (
+                <div className="text-gray-500">No registered voters yet.</div>
+              ) : (
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {registeredvoters.map(voter => {
+                    const isVerified = verifiedvoters.some(vc => vc.id === voter.id);
+                    return (
+                      <li
+                        key={voter.id}
+                        className={`flex items-center space-x-4 bg-green-50 rounded-lg p-4 transition ${isVerified ? 'opacity-60 cursor-default' : 'hover:bg-green-100 cursor-pointer'}`}
+                        onClick={() => {
+                          if (!isVerified) {
+                            setModalvoter(voter);
+                            setModalOpen(true);
+                          }
+                        }}
+                      >
+                        <Image
+                          src={voter.photo_url || '/placeholder-avatar.png'}
+                          alt={voter.full_name}
+                          width={56}
+                          height={56}
+                          className="w-14 h-14 rounded-full object-cover border-2 border-green-400"
+                        />
+                        <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
+                        {isVerified && (
+                          <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Verified</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
+          {activeSection === 'verified' && (
+            <section ref={verifiedRef}>
+              <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center justify-between">
+                <span>Verified Voters</span>
+                <span className="text-base font-semibold text-blue-600">Total: {verifiedvoters.length}</span>
+              </h2>
+              {verifiedvoters.length === 0 ? (
+                <div className="text-gray-500">No verified voters yet.</div>
+              ) : (
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {verifiedvoters.map(voter => (
+                    <li key={voter.id} className="flex items-center space-x-4 bg-blue-50 rounded-lg p-4">
+                      <Image
+                        src={voter.photo_url || '/placeholder-avatar.png'}
+                        alt={voter.full_name}
+                        width={56}
+                        height={56}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-blue-400"
+                      />
+                      <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+          {/* Voter Modal */}
+          <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
+            {modalvoter && (
+              <div className="flex flex-col items-center">
+                <Image
+                  src={modalvoter.photo_url || '/placeholder-avatar.png'}
+                  alt={modalvoter.full_name}
+                  width={120}
+                  height={120}
+                  className="w-28 h-28 rounded-full object-cover border-2 border-indigo-400 mb-4"
+                />
+                <h3 className="text-2xl font-bold mb-2">{modalvoter.full_name}</h3>
+                <p className="mb-1"><b>Voter ID:</b> {modalvoter.voter_id}</p>
+                <p className="mb-1"><b>Father's Name:</b> {modalvoter.father_name}</p>
+                <p className="mb-1"><b>Mother's Name:</b> {modalvoter.mother_name}</p>
+                <p className="mb-1"><b>DOB:</b> {modalvoter.dob}</p>
+                <p className="mb-1"><b>Gender:</b> {modalvoter.gender}</p>
+                <p className="mb-1"><b>Address:</b> {modalvoter.address}</p>
+                <div className="flex gap-4 mt-4">
+                  <a href={modalvoter.photo_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Photo</a>
+                  <a href={modalvoter.id_proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View ID Proof</a>
+                </div>
+                <button
+                  className="mt-6 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+                  onClick={() => handleVerifyvoter(modalvoter)}
+                >
+                  Mark as Verified
+                </button>
+              </div>
+            )}
+          </SimpleModal>
+        </div>
       </div>
     </div>
   );
