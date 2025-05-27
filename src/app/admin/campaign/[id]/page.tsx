@@ -218,13 +218,13 @@ export default function CampaignDetails() {
           </span>
         </div>
         <div className="text-gray-700">
-          <span className="font-semibold">Number of voters:</span> {campaign.num_voters}
+          <span className="font-semibold">Number of Voters:</span> {campaign.num_voters}
         </div>
         <button
           className="w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 mt-4"
           onClick={() => router.push(`/admin/campaign/${id}/add-voter`)}
         >
-          Add voter
+          Add Voter
         </button>
 
         {/* voter List */}
@@ -284,7 +284,7 @@ export default function CampaignDetails() {
                     />
                     <span className="text-lg font-medium text-gray-800">{voter.full_name}</span>
                     {isVerified && (
-                      <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">voter is Verified</span>
+                      <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Voter is Verified</span>
                     )}
                   </li>
                 );
