@@ -87,7 +87,7 @@ export default function HomePage() {
             Admin Login
           </button> */}
 
-          <div className="border-t pt-4">
+          <div className="pt-4">
             <button
               onClick={handleGoogleLogin}
               className="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition"
