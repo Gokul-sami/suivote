@@ -168,6 +168,7 @@ export default function CampaignDetails() {
 
   async function handleVerifyCandidate(candidate: _Candidate) {
     try {
+      
       await setDoc(
         doc(db, 'campaigns', id, 'verified_candidates', candidate.id),
         candidate
