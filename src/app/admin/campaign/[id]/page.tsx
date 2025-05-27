@@ -168,6 +168,7 @@ export default function CampaignDetails() {
 
   async function handleVerifyvoter(voter: _voter) {
     try {
+      
       await setDoc(
         doc(db, 'campaigns', id, 'verified_voters', voter.id),
         voter
