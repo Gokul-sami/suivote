@@ -10,10 +10,6 @@ import { collection, doc, getDocs, setDoc, Timestamp } from "firebase/firestore"
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Ed25519Provider } from 'key-did-provider-ed25519'
-import KeyResolver from 'key-did-resolver'
-import { DID } from 'dids'
-
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -139,28 +135,10 @@ export default function RegisterPage() {
     }
   };
 
-  const createDID = async (): Promise<string | null> => {
-    try {
-    const storedKey = window.sessionStorage.getItem("ephemeralPrivateKey");
-    console.log("Stored Key:", storedKey);
-    if (!storedKey) {
-      throw new Error("Ephemeral private key not found in session storage.");
-    }
-
-    const fullKey = Uint8Array.from(atob(storedKey), c => c.charCodeAt(0));
-    const seed = fullKey.slice(0, 32);
-
-    const provider = new Ed25519Provider(seed);
-    const did = new DID({ provider, resolver: KeyResolver.getResolver() });
-    await did.authenticate();
-
-    console.log("✅ DID created:", did.id);
-    return did.id;
-  } catch (error) {
-    console.error("❌ Failed to create DID:", error);
-    return null;
-  }
-
+  const createDID = (phone: string) => {
+    // Example: create a simple DID using phone number and random string
+    // In a real app, you might want to use a proper DID method
+    return `did:example:${phone}-${Math.random().toString(36).substring(2, 10)}`;
   };
 
   const handleSendOtp = async () => {
@@ -213,16 +191,8 @@ export default function RegisterPage() {
       await confirmationResult.confirm(otp);
 
       // Create and store DID (not shown to user)
-      //const did = createDID();
-      const did = await createDID();
-      if (did) {
-        localStorage.setItem("did", did);
-        alert(`Your DID: ${did}`);
-      } else {
-        setError("Failed to create DID.");
-        return;
-      }
-      //localStorage.setItem("did", did);
+      const did = createDID(phone);
+      localStorage.setItem("did", did);
       localStorage.setItem("campaign_id", selectedCampaign?.id || "");
 
       // Add to registered voters collection
@@ -487,4 +457,3 @@ export default function RegisterPage() {
     </main>
   );
 }
-
