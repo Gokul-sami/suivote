@@ -30,6 +30,7 @@ interface _voter {
   dob: string;
   gender: string;
   address: string;
+  did: string;
   photo_url: string;
   id_proof_url: string;
   created_at: unknown | null;
@@ -108,6 +109,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
+            did: data.did ?? '', // Ensure 'did' is included
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -134,6 +136,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
+            did: data.did ?? '', // Ensure 'did' is included
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -160,6 +163,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
+            did: data.did ?? '', // Ensure 'did' is included
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -555,6 +559,7 @@ export default function CampaignDetails() {
                   <p className="mb-1"><b>DOB:</b> {modalvoter.dob}</p>
                   <p className="mb-1"><b>Gender:</b> {modalvoter.gender}</p>
                   <p className="mb-1"><b>Address:</b> {modalvoter.address}</p>
+                  <p className="mb-1"><b>DID:</b> {modalvoter.did}</p>
                   <div className="flex gap-4 mt-4">
                     <a href={modalvoter.photo_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Photo</a>
                     <a href={modalvoter.id_proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View ID Proof</a>

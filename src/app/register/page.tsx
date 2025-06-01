@@ -301,7 +301,7 @@ export default function RegisterPage() {
               </ul>
             )}
             {selectedCampaign && (
-              <div className="text-green-700 text-sm mt-2 text-center">Selected: {selectedCampaign.title}</div>
+              <div className="text-green-700 text-sm mt-2 text-center">Selected: {selectedCampaign.title}</div> 
             )}
           </div>
         ) : step === 1 ? (
