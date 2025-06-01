@@ -1,7 +1,7 @@
 "use client";
 
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -109,7 +109,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
-            did: data.did ?? '', // Ensure 'did' is included
+            did: data.did ?? '',
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -136,7 +136,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
-            did: data.did ?? '', // Ensure 'did' is included
+            did: data.did ?? '',
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -201,10 +201,21 @@ export default function CampaignDetails() {
 
   async function handleVerifyvoter(voter: _voter) {
     try {
-      
+      await updateDoc(
+        doc(db, 'voters', voter.id),
+        {
+          ['verified']: true,
+        }
+      );
       await setDoc(
         doc(db, 'campaigns', id, 'verified_voters', voter.id),
         voter
+      );
+      await updateDoc(
+        doc(db, 'campaigns', id, 'verified_voters', voter.id),
+        {
+          ['verified']: true,
+        }
       );
       setVerifiedvoters(prev => [...prev, voter]);
       setModalOpen(false);

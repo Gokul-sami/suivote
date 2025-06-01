@@ -239,6 +239,27 @@ export default function RegisterPage() {
             phone,
             did,
             registered_at: Timestamp.now(),
+            verified: false,
+          }
+        );
+        //all voters list
+        await setDoc(
+          doc(db, 'voters', voterId),
+          {
+            full_name: fullName,
+            voter_id: voterId,
+            father_name: fatherName,
+            mother_name: motherName,
+            dob,
+            gender,
+            address,
+            photo_url: photoUrl,
+            id_proof_url: idProofUrl,
+            phone,
+            did,
+            registered_at: Timestamp.now(),
+            campaignId: selectedCampaign.id,
+            verified: false,
           }
         );
       }
