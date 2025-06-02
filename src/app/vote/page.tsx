@@ -291,13 +291,13 @@ export default function VotingFlow() {
                       <div className="flex flex-col items-center mr-4">
                         <span className="text-xs text-gray-400 mb-1">Party Symbol</span>
                         {candidate.party_symbol_url ? (
-                          <div className="relative w-10 h-10">
+                          <div className="relative w-14 h-14 rounded-full overflow-hidden">
                             <Image
                               src={candidate.party_symbol_url}
                               alt={`${candidate.party} symbol`}
                               fill
                               className="object-contain"
-                              sizes="40px"
+                              sizes="50px"
                             />
                           </div>
                         ) : (
@@ -314,19 +314,7 @@ export default function VotingFlow() {
                         className="appearance-none w-6 h-6 border-2 border-blue-400 rounded-md checked:bg-blue-600 checked:border-blue-600 transition-all duration-150 focus:outline-none relative cursor-pointer"
                         style={{ boxShadow: selectedCandidate === candidate.id ? "0 0 0 2px #3b82f6" : undefined }}
                       />
-                      {selectedCandidate === candidate.id && (
-                        <svg
-                          className="absolute right-6"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          style={{ pointerEvents: "none" }}
-                        >
-                          <circle cx="12" cy="12" r="12" fill="#2563eb" opacity="0.15"/>
-                          <path d="M7 13l3 3 7-7" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
+                      {/* Removed the tick SVG */}
                     </label>
                   ))}
                 </div>
