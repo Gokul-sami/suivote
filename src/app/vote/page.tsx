@@ -3,12 +3,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, getDocs, updateDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Image from "next/image";
 
 interface Candidate {
   id: string;
   name: string;
   party?: string;
-  description?: string;
+  party_symbol_url?: string;
+  photo?: string;
 }
 
 interface CampaignInfo {
@@ -106,9 +108,10 @@ export default function VotingFlow() {
       const candidatesSnapshot = await getDocs(candidatesCol);
       const candidatesData = candidatesSnapshot.docs.map(doc => ({
         id: doc.id,
-        name: doc.data().name || "Unknown Candidate",
-        party: doc.data().party || "",
-        description: doc.data().description || ""
+        name: doc.data().full_name || "Unknown Candidate",
+        party: doc.data().party_name || "",
+        party_symbol_url: doc.data().party_symbol_url || "",
+        photo: doc.data().profile_photo_url || "",
       }));
 
       setCandidates(candidatesData);
@@ -168,7 +171,6 @@ export default function VotingFlow() {
       {!verificationComplete ? (
         <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
           <h1 className="text-2xl font-bold text-blue-600 mb-6">Verify Your Identity</h1>
-          
           <div className="mb-6 text-left">
             <label htmlFor="did-input" className="block text-sm font-medium text-gray-700 mb-1">
               Enter your DID
@@ -183,13 +185,11 @@ export default function VotingFlow() {
               onKeyDown={(e) => e.key === "Enter" && handleVerify()}
             />
           </div>
-
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
               {error}
             </div>
           )}
-
           <button
             onClick={handleVerify}
             disabled={isLoading || !inputDid.trim()}
@@ -220,12 +220,10 @@ export default function VotingFlow() {
               {campaignInfo?.description || "Cast your vote"}
             </p>
           </div>
-
           <div className="mb-6 bg-blue-50 p-4 rounded-md">
             <p className="font-medium">Voting as:</p>
             <p className="text-sm text-gray-700 break-all">{did}</p>
           </div>
-
           {hasVoted ? (
             <div className="text-center py-8">
               <div className="inline-block bg-green-100 text-green-700 p-4 rounded-full mb-4">
@@ -250,46 +248,89 @@ export default function VotingFlow() {
           ) : (
             <>
               <h2 className="text-xl font-semibold mb-4">Select Your Candidate</h2>
-              
               {candidates.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   No candidates available for this campaign
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="flex flex-col gap-4 mb-6">
                   {candidates.map(candidate => (
-                    <div
+                    <label
                       key={candidate.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition ${
+                      className={`flex items-center justify-between border rounded-lg p-4 transition cursor-pointer ${
                         selectedCandidate === candidate.id
                           ? "border-blue-500 bg-blue-50"
                           : "hover:border-blue-300"
                       }`}
-                      onClick={() => setSelectedCandidate(candidate.id)}
                     >
-                      <div className="flex items-start">
-                        <div className={`mr-4 w-10 h-10 rounded-full flex items-center justify-center ${
-                          selectedCandidate === candidate.id 
-                            ? "bg-blue-100 text-blue-600" 
-                            : "bg-gray-100 text-gray-600"
-                        }`}>
-                          {candidate.name.charAt(0).toUpperCase()}
-                        </div>
+                      {/* Profile Photo on the left */}
+                      <div className="flex items-center gap-4 flex-1">
+                        {candidate.photo ? (
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden">
+                            <Image
+                              src={candidate.photo}
+                              alt={candidate.name}
+                              fill
+                              className="object-cover"
+                              sizes="64px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500">
+                            {candidate.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
-                          <h3 className="font-medium">{candidate.name}</h3>
+                          <h3 className="font-medium text-lg">{candidate.name}</h3>
                           {candidate.party && (
-                            <p className="text-sm text-gray-500">{candidate.party}</p>
-                          )}
-                          {candidate.description && (
-                            <p className="text-sm text-gray-600 mt-1">{candidate.description}</p>
+                            <p className="text-sm text-gray-500 mt-1">{candidate.party}</p>
                           )}
                         </div>
                       </div>
-                    </div>
+                      {/* Party Symbol on the right */}
+                      <div className="flex flex-col items-center mr-4">
+                        <span className="text-xs text-gray-400 mb-1">Party Symbol</span>
+                        {candidate.party_symbol_url ? (
+                          <div className="relative w-10 h-10">
+                            <Image
+                              src={candidate.party_symbol_url}
+                              alt={`${candidate.party} symbol`}
+                              fill
+                              className="object-contain"
+                              sizes="40px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-300">
+                            <svg width="24" height="24" fill="none"><rect width="24" height="24" rx="12" fill="#e5e7eb"/></svg>
+                          </div>
+                        )}
+                      </div>
+                      {/* Custom Checkbox on the far right */}
+                      <input
+                        type="checkbox"
+                        checked={selectedCandidate === candidate.id}
+                        onChange={() => setSelectedCandidate(candidate.id)}
+                        className="appearance-none w-6 h-6 border-2 border-blue-400 rounded-md checked:bg-blue-600 checked:border-blue-600 transition-all duration-150 focus:outline-none relative cursor-pointer"
+                        style={{ boxShadow: selectedCandidate === candidate.id ? "0 0 0 2px #3b82f6" : undefined }}
+                      />
+                      {selectedCandidate === candidate.id && (
+                        <svg
+                          className="absolute right-6"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          style={{ pointerEvents: "none" }}
+                        >
+                          <circle cx="12" cy="12" r="12" fill="#2563eb" opacity="0.15"/>
+                          <path d="M7 13l3 3 7-7" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </label>
                   ))}
                 </div>
               )}
-
               {candidates.length > 0 && (
                 <button
                   onClick={handleVote}
