@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, getDocs, updateDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -15,9 +15,8 @@ interface CampaignInfo {
   id: string;
   title: string;
   description: string;
-  start_date: string;
-  end_date: string;
-  active: boolean;
+  start_date: Date;
+  end_date: Date;
 }
 
 export default function VotingFlow() {
@@ -32,7 +31,11 @@ export default function VotingFlow() {
   const [error, setError] = useState("");
   const [verificationComplete, setVerificationComplete] = useState(false);
 
-  // Verify DID and load campaign info
+  const checkCampaignStatus = (start: Date, end: Date) => {
+    const now = new Date();
+    return now >= start && now <= end;
+  };
+
   const handleVerify = async () => {
     setIsLoading(true);
     setError("");
@@ -45,9 +48,8 @@ export default function VotingFlow() {
       }
 
       // Search for voter by DID
-      const votersRef = collection(db, "voters");
-      const q = query(votersRef, where("did", "==", searchDid));
-      const querySnapshot = await getDocs(q);
+      const votersQuery = query(collection(db, "voters"), where("did", "==", searchDid));
+      const querySnapshot = await getDocs(votersQuery);
 
       if (querySnapshot.empty) {
         setError("DID not found. Please register first.");
@@ -67,11 +69,6 @@ export default function VotingFlow() {
         return;
       }
 
-      // Store verification data
-      localStorage.setItem("verifiedDid", searchDid);
-      localStorage.setItem("campaignId", voterData.campaignId);
-      setDid(searchDid);
-
       // Load campaign details
       const campaignRef = doc(db, "campaigns", voterData.campaignId);
       const campaignSnap = await getDoc(campaignRef);
@@ -82,27 +79,20 @@ export default function VotingFlow() {
       }
 
       const campaignData = campaignSnap.data();
-      const now = new Date();
-      const startDate = campaignData.start_date?.toDate();
-      const endDate = campaignData.end_date?.toDate();
+      const startDate = campaignData.start_date.toDate();
+      const endDate = campaignData.end_date.toDate();
 
-      if (now < startDate) {
-        setError(`Voting starts on ${startDate.toLocaleDateString()}`);
-        return;
-      }
-
-      if (now > endDate) {
-        setError("Voting has ended");
+      if (!checkCampaignStatus(startDate, endDate)) {
+        setError("Voting is not currently active for this campaign");
         return;
       }
 
       setCampaignInfo({
         id: campaignData.id,
-        title: campaignData.title,
-        description: campaignData.description,
-        start_date: campaignData.start_date,
-        end_date: campaignData.end_date,
-        active: campaignData.active
+        title: campaignData.title || "Untitled Campaign",
+        description: campaignData.description || "",
+        start_date: startDate,
+        end_date: endDate
       });
 
       // Check if already voted
@@ -111,20 +101,18 @@ export default function VotingFlow() {
         setSelectedCandidate(voterData.candidate || "");
       }
 
-      // Load candidates
-      const candidatesSnapshot = await getDocs(
-        collection(db, "campaigns", voterData.campaignId, "candidates")
-      );
-      const candidatesData = candidatesSnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
-          party: doc.data().party,
-          description: doc.data().description
-        }))
-        .filter(c => c.name);
+      // Load candidates from subcollection
+      const candidatesCol = collection(db, "campaigns", voterData.campaignId, "candidates");
+      const candidatesSnapshot = await getDocs(candidatesCol);
+      const candidatesData = candidatesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name || "Unknown Candidate",
+        party: doc.data().party || "",
+        description: doc.data().description || ""
+      }));
 
       setCandidates(candidatesData);
+      setDid(searchDid);
       setVerificationComplete(true);
 
     } catch (err) {
@@ -143,9 +131,8 @@ export default function VotingFlow() {
 
     try {
       // Verify voter again
-      const votersRef = collection(db, "voters");
-      const q = query(votersRef, where("did", "==", did));
-      const querySnapshot = await getDocs(q);
+      const votersQuery = query(collection(db, "voters"), where("did", "==", did));
+      const querySnapshot = await getDocs(votersQuery);
 
       if (querySnapshot.empty) {
         setError("Voter verification failed");
@@ -176,11 +163,9 @@ export default function VotingFlow() {
     }
   };
 
-  // Render verification form or voting interface
   return (
     <main className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       {!verificationComplete ? (
-        // Verification Form
         <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
           <h1 className="text-2xl font-bold text-blue-600 mb-6">Verify Your Identity</h1>
           
@@ -226,22 +211,14 @@ export default function VotingFlow() {
           </button>
         </div>
       ) : (
-        // Voting Interface
         <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-2xl">
-          <div className="mb-6 border-b pb-4">
+          <div className="mb-6">
             <h1 className="text-2xl font-bold text-blue-600">
               {campaignInfo?.title || "Voting"}
             </h1>
             <p className="text-gray-600">
               {campaignInfo?.description || "Cast your vote"}
             </p>
-            {/* <div className="mt-2 text-sm text-gray-500">
-              {campaignInfo && (
-                <>
-                  Voting period: {new Date(campaignInfo.start_date).toLocaleDateString()} - {new Date(campaignInfo.end_date).toLocaleDateString()}
-                </>
-              )}
-            </div> */}
           </div>
 
           <div className="mb-6 bg-blue-50 p-4 rounded-md">
@@ -276,7 +253,7 @@ export default function VotingFlow() {
               
               {candidates.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  No candidates available
+                  No candidates available for this campaign
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
