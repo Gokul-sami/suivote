@@ -63,7 +63,7 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => router.push("/verify")}
+            onClick={() => router.push("/vote")}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
             Vote

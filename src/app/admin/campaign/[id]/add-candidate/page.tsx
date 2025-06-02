@@ -1,7 +1,7 @@
 "use client";
 
 import { db, storage } from '@/lib/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -19,8 +19,7 @@ export default function AddCandidatePage() {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [partyName, setPartyName] = useState("");
   const [partySymbol, setPartySymbol] = useState<File | null>(null);
-  const [manifesto, setManifesto] = useState<File | null>(null);
-  const [manifestoText, setManifestoText] = useState("");
+
   const [campaign, setCampaign] = useState(id || "");
   const [ward, setWard] = useState("");
   const [district, setDistrict] = useState("");
@@ -33,7 +32,6 @@ export default function AddCandidatePage() {
       let idProofUrl = '';
       let profilePhotoUrl = '';
       let partySymbolUrl = '';
-      let manifestoUrl = '';
       const safeName = fullName.trim().toLowerCase().replace(/\s+/g, '_');
       if (idProof) {
         const idProofRef = ref(storage, `candidates/${id}/idproofs/${safeName}_id`);
@@ -50,11 +48,7 @@ export default function AddCandidatePage() {
         await uploadBytes(partySymbolRef, partySymbol);
         partySymbolUrl = await getDownloadURL(partySymbolRef);
       }
-      if (manifesto) {
-        const manifestoRef = ref(storage, `candidates/${id}/manifestos/${safeName}_manifesto`);
-        await uploadBytes(manifestoRef, manifesto);
-        manifestoUrl = await getDownloadURL(manifestoRef);
-      }
+     
       const candidateData = {
         full_name: fullName,
         age,
@@ -66,12 +60,13 @@ export default function AddCandidatePage() {
         profile_photo_url: profilePhotoUrl,
         party_name: partyName,
         party_symbol_url: partySymbolUrl,
-        manifesto_text: manifestoText,
-        manifesto_url: manifestoUrl,
+   
         created_at: new Date().toISOString(),
       };
+      // Use setDoc with the candidate's safe name as the document ID
+      const { setDoc, doc } = await import('firebase/firestore');
       const candidatesCol = collection(db, 'campaigns', id, 'candidates');
-      await addDoc(candidatesCol, candidateData);
+      await setDoc(doc(candidatesCol, safeName), candidateData);
       alert('Candidate added successfully!');
       router.push(`/admin/campaign/${id}`);
     } catch (error) {
