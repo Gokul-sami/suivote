@@ -219,12 +219,6 @@ export default function RegisterPage() {
 
       // Add to registered voters collection
       if (selectedCampaign?.id) {
-        // Use fullName as the document ID (replace spaces with hyphens, lowercase, remove special chars)
-        const voterId = fullName
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '');
 
         // Upload photo and id proof to storage and get URLs
         let photoUrl = '';
