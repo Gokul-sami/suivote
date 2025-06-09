@@ -1,10 +1,12 @@
 "use client";
 
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { createVerifiableCredentialJwt } from 'did-jwt-vc';
+import { EdDSASigner } from 'did-jwt';
 
 // Custom Modal component (no external dependency)
 function SimpleModal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) {
@@ -28,6 +30,7 @@ interface _voter {
   dob: string;
   gender: string;
   address: string;
+  did: string;
   photo_url: string;
   id_proof_url: string;
   created_at: unknown | null;
@@ -106,6 +109,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
+            did: data.did ?? '',
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -132,6 +136,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
+            did: data.did ?? '',
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -158,6 +163,7 @@ export default function CampaignDetails() {
             dob: data.dob ?? '',
             gender: data.gender ?? '',
             address: data.address ?? '',
+            did: data.did ?? '', // Ensure 'did' is included
             photo_url: data.photo_url ?? '',
             id_proof_url: data.id_proof_url ?? '',
             created_at: data.created_at ?? null,
@@ -195,10 +201,21 @@ export default function CampaignDetails() {
 
   async function handleVerifyvoter(voter: _voter) {
     try {
-      
+      await updateDoc(
+        doc(db, 'voters', voter.id),
+        {
+          ['verified']: true,
+        }
+      );
       await setDoc(
         doc(db, 'campaigns', id, 'verified_voters', voter.id),
         voter
+      );
+      await updateDoc(
+        doc(db, 'campaigns', id, 'verified_voters', voter.id),
+        {
+          ['verified']: true,
+        }
       );
       setVerifiedvoters(prev => [...prev, voter]);
       setModalOpen(false);
@@ -251,7 +268,7 @@ export default function CampaignDetails() {
             >
               Campaign Details
             </button>
-            <button
+            {/* <button
               className={`flex-1 py-4 px-2 text-center font-semibold transition border-b-2
                 ${activeSection === 'voters'
                   ? 'text-indigo-700 border-indigo-700'
@@ -259,7 +276,7 @@ export default function CampaignDetails() {
               onClick={() => setActiveSection('voters')}
             >
               Voters
-            </button>
+            </button> */}
             <button
               className={`flex-1 py-4 px-2 text-center font-semibold transition border-b-2
                 ${activeSection === 'registered'
@@ -312,12 +329,6 @@ export default function CampaignDetails() {
                       <span className="font-semibold">Number of Voters:</span> {campaign.num_voters}
                     </span>
                 </div>
-                <button
-                  className="mt-4 w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  onClick={() => router.push(`/admin/campaign/${id}/add-voter`)}
-                >
-                  Add Voter
-                </button>
                 <button
                   className="mt-2 w-full bg-indigo-600 text-white py-3 rounded-lg text-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   onClick={() => router.push(`/admin/campaign/${id}/add-candidate`)}
@@ -553,6 +564,7 @@ export default function CampaignDetails() {
                   <p className="mb-1"><b>DOB:</b> {modalvoter.dob}</p>
                   <p className="mb-1"><b>Gender:</b> {modalvoter.gender}</p>
                   <p className="mb-1"><b>Address:</b> {modalvoter.address}</p>
+                  <p className="mb-1"><b>DID:</b> {modalvoter.did}</p>
                   <div className="flex gap-4 mt-4">
                     <a href={modalvoter.photo_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Photo</a>
                     <a href={modalvoter.id_proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View ID Proof</a>

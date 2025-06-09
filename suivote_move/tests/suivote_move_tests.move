@@ -39,7 +39,8 @@ module tests::vote_test {
 
         // Mark as voted
         mark_as_voted(&mut voter);
-        assert!(has_voted(&voter), 103);   // Should be true
+        assert!(has_voted(&voter), 103); // Should be true
+        
     }
 }
 

@@ -10,6 +10,10 @@ import { collection, doc, getDocs, setDoc, Timestamp } from "firebase/firestore"
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Ed25519Provider } from 'key-did-provider-ed25519';
+import KeyResolver from 'key-did-resolver';
+import { DID } from 'dids';
+// ADD THESE NEW IMPORTS
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -135,10 +139,24 @@ export default function RegisterPage() {
     }
   };
 
-  const createDID = (phone: string) => {
-    // Example: create a simple DID using phone number and random string
-    // In a real app, you might want to use a proper DID method
-    return `did:example:${phone}-${Math.random().toString(36).substring(2, 10)}`;
+  const createDID = async (): Promise<string | null> => {
+    try {
+      const storedKey = window.sessionStorage.getItem("ephemeralPrivateKey");
+      if (!storedKey) {
+        throw new Error("Ephemeral private key not found in session storage.");
+      }
+      const fullKey = Uint8Array.from(atob(storedKey), c => c.charCodeAt(0));
+      const seed = fullKey.slice(0, 32);
+
+      const provider = new Ed25519Provider(seed);
+      const did = new DID({ provider, resolver: KeyResolver.getResolver() });
+      await did.authenticate();
+
+      return did.id;
+    } catch (error) {
+      console.error("Failed to create DID:", error);
+      return null;
+    }
   };
 
   const handleSendOtp = async () => {
@@ -191,18 +209,17 @@ export default function RegisterPage() {
       await confirmationResult.confirm(otp);
 
       // Create and store DID (not shown to user)
-      const did = createDID(phone);
+      const did = await createDID();
+      if (!did) {
+        setError("Failed to create DID. Please try again.");
+        setVerifyingOtp(false);
+        return;
+      }
       localStorage.setItem("did", did);
       localStorage.setItem("campaign_id", selectedCampaign?.id || "");
 
       // Add to registered voters collection
       if (selectedCampaign?.id) {
-        // Use fullName as the document ID (replace spaces with hyphens, lowercase, remove special chars)
-        const voterId = fullName
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '');
 
         // Upload photo and id proof to storage and get URLs
         let photoUrl = '';
@@ -239,11 +256,32 @@ export default function RegisterPage() {
             phone,
             did,
             registered_at: Timestamp.now(),
+            verified: false,
+          }
+        );
+        //all voters list
+        await setDoc(
+          doc(db, 'voters', voterId),
+          {
+            full_name: fullName,
+            voter_id: voterId,
+            father_name: fatherName,
+            mother_name: motherName,
+            dob,
+            gender,
+            address,
+            photo_url: photoUrl,
+            id_proof_url: idProofUrl,
+            phone,
+            did,
+            registered_at: Timestamp.now(),
+            campaignId: selectedCampaign.id,
+            verified: false,
           }
         );
       }
 
-      alert(`Your DID: ${did}`);
+      alert(`Your DID: ${did}\n\n⚠️ Please copy and save your DID`);
       
       // Redirect to home after successful verification
       router.push("/dashboard");
@@ -301,7 +339,7 @@ export default function RegisterPage() {
               </ul>
             )}
             {selectedCampaign && (
-              <div className="text-green-700 text-sm mt-2 text-center">Selected: {selectedCampaign.title}</div>
+              <div className="text-green-700 text-sm mt-2 text-center">Selected: {selectedCampaign.title}</div> 
             )}
           </div>
         ) : step === 1 ? (
