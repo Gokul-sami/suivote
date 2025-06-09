@@ -43,7 +43,7 @@ export default function VotingFlow() {
     setError("");
   
     try {
-      const searchDid = inputDid.trim().toLowerCase();
+      const searchDid = inputDid.trim();
       if (!searchDid) {
         setError("Please enter your DID");
         return;
