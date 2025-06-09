@@ -281,7 +281,7 @@ export default function RegisterPage() {
         );
       }
 
-      alert(`Your DID: ${did}`);
+      alert(`Your DID: ${did}\n\n⚠️ Please copy and save your DID`);
       
       // Redirect to home after successful verification
       router.push("/dashboard");

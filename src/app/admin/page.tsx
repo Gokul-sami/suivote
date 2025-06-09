@@ -68,7 +68,7 @@ export default function AdminVerify() {
         return;
       }
       await storeDIDInFirestore(did, 'admin');
-      alert(`Login successful. Your DID: ${did}`);
+      alert(`Login successful.\n\nYour DID: ${did}\n\n⚠️ Please copy and save your DID for future logins`);
       window.sessionStorage.setItem('did', did);
       router.push('/admin/dashboard');
     } catch (error) {
@@ -135,7 +135,7 @@ export default function AdminVerify() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen space-y-6 px-4">
-      <h1 className="text-2xl font-bold">Login as Admin or User</h1>
+      <h1 className="text-2xl font-bold">Login as Admin</h1>
 
       {/* Admin ZKP Login */}
       <div className="border p-4 rounded w-72 shadow">
@@ -160,7 +160,7 @@ export default function AdminVerify() {
 
       {/* Phone OTP Login */}
       <div className="border p-4 rounded w-72 shadow">
-        <h2 className="text-lg font-semibold mb-2">User Login</h2>
+        <h2 className="text-lg font-semibold mb-2">Signup via Phone Number</h2>
         {!otpSent ? (
           <>
             <input
