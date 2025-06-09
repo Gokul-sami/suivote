@@ -330,12 +330,6 @@ export default function CampaignDetails() {
                     </span>
                 </div>
                 <button
-                  className="mt-4 w-full bg-green-600 text-white py-3 rounded-lg text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  onClick={() => router.push(`/admin/campaign/${id}/add-voter`)}
-                >
-                  Add Voter
-                </button>
-                <button
                   className="mt-2 w-full bg-indigo-600 text-white py-3 rounded-lg text-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   onClick={() => router.push(`/admin/campaign/${id}/add-candidate`)}
                 >
